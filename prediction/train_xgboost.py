@@ -76,8 +76,8 @@ for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in en
     labels = torch.permute(labels, (0, 3, 1, 2)).numpy()
     labels = labels[:, :, :, 0]
     masks = torch.permute(data_ob_masks, (0, 3, 1, 2))
-    datas = datas.reshape(-1, config['in_len'] * 1)
-    labels = labels.reshape(-1, config["out_len"] * 1)
+    datas = datas.reshape(-1, config.in_len * 1)
+    labels = labels.reshape(-1, config.out_len * 1)
     train_datas.append(datas)
     train_labels.append(labels)
 
@@ -123,4 +123,4 @@ with torch.no_grad():
 
     print(log_buffer)
     logging.info(log_buffer)
-    np.save(base_dir + "prediction_{}.npy".format(index), predictions)
+    np.save(base_dir + "prediction_{}.npy".format(config.index), predictions)
