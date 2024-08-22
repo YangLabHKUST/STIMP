@@ -63,8 +63,8 @@ adj = torch.from_numpy(adj).float().to(device)
 is_sea = torch.from_numpy(train_dataset.area).bool().to(device)
 low_bound = torch.from_numpy(train_dataset.min).float().to(device)
 high_bound = torch.from_numpy(train_dataset.max).float().to(device)
-mean = torch.from_numpy(train_dataset.mean).float().to(device)
-std = torch.from_numpy(train_dataset.std).float().to(device)
+mean = train_dataset.mean[np.newaxis, np.newaxis, np.newaxis,:]
+std = train_dataset.std[np.newaxis, np.newaxis, np.newaxis,:]
    
 model = XGBRegressor()
 train_datas = []
