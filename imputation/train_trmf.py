@@ -1,0 +1,110 @@
+import argparse
+import torch
+import datetime
+import json
+import yaml
+import os
+from torch.utils.data import DataLoader
+import logging
+import sys
+import time
+from tqdm import tqdm
+from timm.utils import AverageMeter
+from timm.scheduler.cosine_lr import CosineLRScheduler
+from einops import repeat, rearrange
+import numpy as np
+
+sys.path.insert(0, os.getcwd())
+from model.trmf import trmf
+from dataset.dataset_imputation import PRE8dDataset
+from utils import check_dir, masked_mae, masked_mse, seed_everything
+
+parser = argparse.ArgumentParser(description='Imputation')
+
+# args for area and methods
+parser.add_argument('--area', type=str, default='MEXICO', help='which bay area we focus')
+
+# basic args
+parser.add_argument('--epochs', type=int, default=500, help='epochs')
+parser.add_argument('--batch_size', type=int, default=8, help='batch size')
+parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
+parser.add_argument('--wd', type=float, default=1e-4, help='weight decay')
+parser.add_argument('--test_freq', type=int, default=500, help='test per n epochs')
+parser.add_argument('--embedding_size', type=int, default=64)
+parser.add_argument('--hidden_channels', type=int, default=64)
+parser.add_argument('--diffusion_embedding_size', type=int, default=64)
+parser.add_argument('--side_channels', type=int, default=1)
+
+# args for tasks
+parser.add_argument('--in_len', type=int, default=46)
+parser.add_argument('--out_len', type=int, default=46)
+parser.add_argument('--missing_ratio', type=float, default=0.1)
+
+# args for diffusion
+parser.add_argument('--beta_start', type=float, default=0.0001, help='beta start from this')
+parser.add_argument('--beta_end', type=float, default=0.5, help='beta end to this')
+parser.add_argument('--num_steps', type=float, default=50, help='denoising steps')
+parser.add_argument('--num_samples', type=int, default=10, help='n datasets')
+parser.add_argument('--schedule', type=str, default='quad', help='noise schedule type')
+parser.add_argument('--target_strategy', type=str, default='random', help='mask')
+
+# args for mae
+parser.add_argument('--num_heads', type=int, default=8, help='n heads for self attention')
+config = parser.parse_args()
+
+if config.area=="MEXICO":
+    config.height, config.width = 36, 120
+elif args.area=="PRE":
+    config.height, config.width = 60, 96
+else:
+    print("Not Implement")
+
+base_dir = "./log/imputation/{}/TRMF/".format(config.area)
+device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+check_dir(base_dir)
+seed_everything(1234)
+timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+logging.basicConfig(level=logging.INFO, filename=os.path.join(base_dir, '{}_missing_{}.log'.format(timestamp, config.missing_ratio)), filemode='a', format='%(asctime)s - %(message)s')
+print(config)
+logging.info(config)
+
+train_dataset = PRE8dDataset(config)
+train_dloader = DataLoader(train_dataset, config.batch_size, shuffle=True, prefetch_factor=2, num_workers=2)
+test_dloader = DataLoader(PRE8dDataset(config, mode='test'), config.batch_size, shuffle=False)
+adj = np.load("/home/mafzhang/data/{}/8d/adj.npy".format(config.area))
+adj = torch.from_numpy(adj).float().to(device)
+low_bound = torch.from_numpy(train_dataset.min).float().to(device)
+high_bound = torch.from_numpy(train_dataset.max).float().to(device)
+
+
+best_mae_sst = 100
+best_mae_chla = 100
+
+ 
+chla_mae_list, chla_mse_list = [], []
+for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
+    datas, data_ob_masks, data_gt_masks, labels, label_masks = datas.to(device), data_ob_masks.to(device), data_gt_masks.to(device), labels.to(device), label_masks.to(device)
+
+    tmp_data = torch.where(data_gt_masks.cpu()==0, float("nan"), datas.cpu())
+    tmp_data = rearrange(tmp_data, "b t c n-> (b n c) t")
+    model = trmf(lags=[1, 24], K=8, lambda_f=1., lambda_x=1., lambda_w=1., alpha=1000., eta=1., max_iter=5000)
+    model.fit(tmp_data.numpy())
+    itp_data = model.impute_missings()
+
+    imputed_data = rearrange(torch.from_numpy(itp_data), "(b n c) t -> b t c n", t=datas.shape[1], b=datas.shape[0], n=datas.shape[-1])
+
+    mask = (data_ob_masks - data_gt_masks).cpu()
+    chla_mae= masked_mae(imputed_data[:,:,0], datas[:,:,0].cpu(), mask[:,:,0])
+    chla_mse= masked_mse(imputed_data[:,:,0], datas[:,:,0].cpu(), mask[:,:,0])
+    chla_mae_list.append(chla_mae)
+    chla_mse_list.append(chla_mse)
+
+chla_mae = torch.stack(chla_mae_list, 0)
+chla_mse = torch.stack(chla_mse_list, 0)
+chla_mae = chla_mae[chla_mae!=0].mean()
+chla_mse = chla_mse[chla_mse!=0].mean()
+
+log_buffer = "test mae: chla-{:.4f}, ".format(chla_mae)
+log_buffer += "test mse: chla-{:.4f}".format(chla_mse)
+print(log_buffer)
+logging.info(log_buffer)
