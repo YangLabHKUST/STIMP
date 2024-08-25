@@ -45,7 +45,7 @@ elif args.area=="PRE":
 else:
     print("Not Implement")
 
-flag = "with_imputation"
+flag = "without_imputation"
 base_dir = "./log/prediction/{}/{}/{}/".format(config.area, config.method, flag)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
@@ -71,8 +71,8 @@ train_datas = []
 train_labels = []
 for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader):
     datas[~data_ob_masks.bool()] = np.nan
-    datas = datas- mean
-    labels = labels- mean
+    # datas = datas- mean
+    # labels = labels- mean
     datas = torch.permute(datas, (0, 3, 1, 2)).numpy()
     labels = torch.permute(labels, (0, 3, 1, 2)).numpy()
     labels = labels[:, :, :,  0]
@@ -96,13 +96,13 @@ with torch.no_grad():
     for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
         b, t, c, n = datas.shape
         datas[~data_ob_masks.bool()] = np.nan
-        datas = datas - mean
+        # datas = datas - mean
         datas = torch.permute(datas*data_ob_masks, (0, 3, 1, 2))
         datas = datas.reshape(-1, t * c)
         prediction = model.predict(datas)
         prediction = prediction.reshape(b, n, 1, -1)
         prediction = np.moveaxis(prediction, [1, -1], [-1, 1])  # b t c n
-        prediction = prediction + mean
+        # prediction = prediction + mean
         prediction = torch.from_numpy(prediction)
         mask = label_masks.cpu()
         label = labels.cpu()
