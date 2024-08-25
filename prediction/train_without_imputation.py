@@ -91,7 +91,12 @@ for epoch in train_process:
     for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader):
         datas, data_ob_masks, data_gt_masks, labels, label_masks = datas.float().to(device), data_ob_masks.to(device), data_gt_masks.to(device), labels.to(device), label_masks.to(device)
         datas = datas*data_ob_masks
+        means = datas.mean(1, keepdim=True).detach()
+        datas = datas - means
+        stdev = torch.sqrt(torch.var(datas, dim=1, keepdim=True, unbiased=False) + 1e-5)
+        datas/= stdev
         prediction = model(datas)
+        prediction = prediction*stdev + means
         loss = masked_mse(prediction, labels, label_masks)
 
         loss.backward()
@@ -116,8 +121,13 @@ for epoch in train_process:
             for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
                 datas, data_ob_masks, data_gt_masks, labels, label_masks = datas.float().to(device), data_ob_masks.to(device), data_gt_masks.to(device), labels.to(device), label_masks.to(device)
                 datas = datas*data_ob_masks
+                means = datas.mean(1, keepdim=True).detach()
+                datas = datas - means
+                stdev = torch.sqrt(torch.var(datas, dim=1, keepdim=True, unbiased=False) + 1e-5)
+                datas /=stdev
 
                 prediction = model(datas)
+                prediction = prediction*stdev + means
                 mask = label_masks.cpu()
                 label = labels.cpu()
 

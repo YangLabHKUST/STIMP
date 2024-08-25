@@ -92,11 +92,16 @@ for epoch in train_process:
     end = time.time()
     for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader):
         datas, data_ob_masks, data_gt_masks, labels, label_masks = datas.float().to(device), data_ob_masks.to(device), data_gt_masks.to(device), labels.to(device), label_masks.to(device)
+        means = datas.mean(1, keepdim=True).detach()
+        datas = datas - means
+        stdev = torch.sqrt(torch.var(datas, dim=1, keepdim=True, unbiased=False) + 1e-5)
+        datas/= stdev
 
         B, T, C, N = datas.shape
         datas = rearrange(datas, 'b t c n -> (b n) t c')
         prediction = model(datas)
         prediction = rearrange(prediction, '(b n) t c -> b t c n', b=B, n=N)
+        prediction = prediction*stdev + means
         loss = masked_mse(prediction, labels, label_masks)
 
         loss.backward()
@@ -122,9 +127,15 @@ for epoch in train_process:
                 datas, data_ob_masks, data_gt_masks, labels, label_masks = datas.float().to(device), data_ob_masks.to(device), data_gt_masks.to(device), labels.to(device), label_masks.to(device)
 
                 B, T, C, N = datas.shape
+                means = datas.mean(1, keepdim=True).detach()
+                datas = datas - means
+                stdev = torch.sqrt(torch.var(datas, dim=1, keepdim=True, unbiased=False) + 1e-5)
+                datas/= stdev
+
                 datas = rearrange(datas, 'b t c n -> (b n) t c')
                 prediction = model(datas)
                 prediction = rearrange(prediction, '(b n) t c -> b t c n', b=B, n=N)
+                prediction = prediction*stdev + means
                 mask = label_masks.cpu()
                 label = labels.cpu()
 

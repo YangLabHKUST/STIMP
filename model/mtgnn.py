@@ -653,8 +653,8 @@ class MTGNN(nn.Module):
             * **X** (PyTorch FloatTensor) - Output sequence for prediction, with shape (batch_size, seq_len, num_nodes, 1).
         """
         batch_size, seq_len, channels, nodes = X_in.size()
-        mean = X_in.mean(1, keepdim=True).detach()
-        X_in = X_in - mean
+        # mean = X_in.mean(1, keepdim=True).detach()
+        # X_in = X_in - mean
         X_in = X_in.permute(0,2,3,1).contiguous()
         A_tilde = self.adj
 
@@ -692,5 +692,5 @@ class MTGNN(nn.Module):
         X = F.relu(self._end_conv_1(X))
         X = self._end_conv_2(X)
         X = X.permute(0,1,3,2).contiguous()
-        X = X + mean
+        # X = X + mean
         return X

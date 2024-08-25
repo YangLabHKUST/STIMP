@@ -117,8 +117,8 @@ class GraphTransformer(nn.Module):
 
     def forward(self, x_enc):
         B, L, D, N = x_enc.shape
-        mean = x_enc.mean(1, keepdim=True).detach()
-        x_enc = x_enc - mean
+        # mean = x_enc.mean(1, keepdim=True).detach()
+        # x_enc = x_enc - mean
         x_enc = rearrange(x_enc, 'b l d n -> (b n) l d')
         enc_out = self.value_embedding(x_enc)
         position_embedding = self.position_embedding()
@@ -138,6 +138,6 @@ class GraphTransformer(nn.Module):
         out = F.silu(out)
         out = self.projection1(out.permute(0,2,1))
         out = rearrange(out, '(b n) d l -> b l d n', b=B, n=N)
-        out = out + mean
+        # out = out + mean
         return out
 

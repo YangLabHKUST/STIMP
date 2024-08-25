@@ -73,6 +73,9 @@ for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in en
     datas[~data_ob_masks.bool()] = np.nan
     # datas = datas- mean
     # labels = labels- mean
+    datas = (datas - mean)/(std+1e-5)
+    labels = (labels - mean)/(std+1e-5)
+
     datas = torch.permute(datas, (0, 3, 1, 2)).numpy()
     labels = torch.permute(labels, (0, 3, 1, 2)).numpy()
     labels = labels[:, :, :,  0]
@@ -95,6 +98,7 @@ label_masks_list = []
 with torch.no_grad():
     for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
         b, t, c, n = datas.shape
+        datas = (datas - mean)/(std+1e-5)
         datas[~data_ob_masks.bool()] = np.nan
         # datas = datas - mean
         datas = torch.permute(datas*data_ob_masks, (0, 3, 1, 2))
@@ -102,7 +106,7 @@ with torch.no_grad():
         prediction = model.predict(datas)
         prediction = prediction.reshape(b, n, 1, -1)
         prediction = np.moveaxis(prediction, [1, -1], [-1, 1])  # b t c n
-        # prediction = prediction + mean
+        prediction = prediction*std + mean
         prediction = torch.from_numpy(prediction)
         mask = label_masks.cpu()
         label = labels.cpu()
