@@ -2,3 +2,6 @@
 *.pt
 *.log
 *.npy
+tmp
+visualization
+
