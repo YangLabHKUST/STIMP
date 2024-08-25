@@ -12,7 +12,7 @@ import sys
 sys.path.insert(0, os.getcwd())
 from dataset.dataset_imputation import PRE8dDataset
 from utils import check_dir, masked_mae, masked_mse, seed_everything
-from model.graphdiffusion import IAP_base
+from model.csdi import IAP_base
 
 parser = argparse.ArgumentParser(description='Imputation')
 
@@ -54,7 +54,7 @@ elif args.area=="PRE":
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/GraphDiffusion/".format(config.area)
+base_dir = "./log/imputation/{}/CSDI/".format(config.area)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)
