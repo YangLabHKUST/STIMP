@@ -89,11 +89,6 @@ print("For dataset, Train start")
 model.fit(train_datas, train_labels)
 print("For dataset, Test start")
 
-train_datas = np.concatenate(train_datas, axis=0)
-train_labels = np.concatenate(train_labels, axis=0)
-print("For dataset {}, Train start".format(str(config.index)))
-model.fit(train_datas, train_labels)
-print("For dataset {}, Test start".format(str(config.index)))
 predictions = []
 labels_list = []
 label_masks_list = []
