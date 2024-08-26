@@ -60,7 +60,7 @@ class IAP_base(nn.Module):
         predicted = self.diffusion_model(total_input, cond_mask, adj, t)
 
         target_mask = observed_mask - cond_mask
-        residual = (observed_data - predicted) * target_mask
+        residual = (noise - predicted) * target_mask
         num_eval = target_mask.sum()
         loss = (residual ** 2).sum() / (num_eval if num_eval > 0 else 1)
 
@@ -80,9 +80,9 @@ class IAP_base(nn.Module):
                     total_input = torch.stack([observed_data,(1-observed_mask)*noisy_target],dim=3)
                     predicted = self.diffusion_model(total_input, observed_mask, adj, (torch.ones(B) * t).long().to(self.device))
 
-                    coeff1 = (1-self.alpha_prev[t])*(self.alpha_hat[t])**0.5 / (1 - self.alpha[t])
-                    coeff2 = ((1-self.alpha_hat[t])*(self.alpha_prev[t])**0.5) / (1 - self.alpha[t])
-                    current_sample = coeff1 *current_sample + coeff2 * predicted
+                    coeff1 = 1 / self.alpha_hat[t] ** 0.5
+                    coeff2 = (1 - self.alpha_hat[t]) / (1 - self.alpha[t]) ** 0.5
+                    current_sample = coeff1 * (current_sample - coeff2 * predicted)
                     if t > 0:
                         noise = torch.randn_like(current_sample)
                         sigma = (

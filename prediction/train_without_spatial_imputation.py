@@ -31,7 +31,7 @@ parser.add_argument('--index', type=int, default=0, help='which dataset we use')
 parser.add_argument('--epochs', type=int, default=200, help='epochs')
 parser.add_argument('--batch_size', type=int, default=8, help='batch size')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
-parser.add_argument('--wd', type=float, default=1e-4, help='weight decay')
+parser.add_argument('--wd', type=float, default=1e-6, help='weight decay')
 parser.add_argument('--test_freq', type=int, default=20, help='test per n epochs')
 parser.add_argument('--hidden_dim', type=int, default=8)
 
@@ -92,9 +92,9 @@ for epoch in train_process:
     end = time.time()
     for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader):
         datas, data_ob_masks, data_gt_masks, labels, label_masks = datas.float().to(device), data_ob_masks.to(device), data_gt_masks.to(device), labels.to(device), label_masks.to(device)
-        datas = datas*data_ob_masks
 
         B, T, C, N = datas.shape
+        datas = datas*data_ob_masks
         means = datas.mean(1, keepdim=True).detach()
         datas = datas - means
         stdev = torch.sqrt(torch.var(datas, dim=1, keepdim=True, unbiased=False) + 1e-5)

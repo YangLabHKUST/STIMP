@@ -30,7 +30,7 @@ parser.add_argument('--index', type=int, default=0, help='which dataset we use')
 parser.add_argument('--epochs', type=int, default=200, help='epochs')
 parser.add_argument('--batch_size', type=int, default=8, help='batch size')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
-parser.add_argument('--wd', type=float, default=1e-4, help='weight decay')
+parser.add_argument('--wd', type=float, default=1e-6, help='weight decay')
 parser.add_argument('--test_freq', type=int, default=20, help='test per n epochs')
 parser.add_argument('--hidden_dim', type=int, default=8)
 
