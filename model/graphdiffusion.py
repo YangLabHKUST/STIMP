@@ -163,6 +163,7 @@ class SpatialTemporalEncoding(nn.Module):
         x = x + x_in
         x = self.gn(x)
 
+
         x = self.mid_projection(x)
         gate, filter = torch.chunk(x, 2, dim=1)
         x = torch.sigmoid(gate)*torch.tanh(filter)
