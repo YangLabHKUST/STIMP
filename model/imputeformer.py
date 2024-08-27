@@ -1,48 +1,42 @@
 import torch
 import torch.nn as nn
-from einops import repeat
+from einops import repeat,rearrange
+import copy
 
 
 class ImputeFormer(nn.Module):
     """
-    Spatiotemporal Imputation Transformer induced by low-rank factorization, KDD'24.
-    Note:
+    Spatiotemporal Imputation Transformer induced by low-rank factorization, KDD'24.  Note:
         This is a simplified implementation under the SAITS framework (ORT+MIT).
         The timestamp encoding is also removed for ease of implementation.
     """
 
     def __init__(
         self,
-        n_steps: int,
-        n_features: int,
-        n_layers: int,
-        d_input_embed: int,
-        d_learnable_embed: int,
-        d_proj: int,
-        d_ffn: int,
-        n_temporal_heads: int,
+        config,
         dropout: float = 0.0,
         input_dim: int = 1,
         output_dim: int = 1,
-        ORT_weight: float = 1,
-        MIT_weight: float = 1,
     ):
         super().__init__()
 
-        self.n_nodes = config.
-        self.in_steps = n_steps
-        self.out_steps = n_steps
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.input_embedding_dim = d_input_embed
-        self.learnable_embedding_dim = d_learnable_embed
-        self.model_dim = d_input_embed + d_learnable_embed
+        nodes={"PRE": 4443, "MEXICO": 2907}
+        self.config = config
+        self.device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+        self.n_nodes = nodes[config.area]
+        self.in_steps = config.in_len
+        self.out_steps = config.in_len
+        self.input_dim = 1
+        self.output_dim = 1
+        self.input_embedding_dim = config.hidden_channels
+        self.learnable_embedding_dim = config.hidden_channels
+        self.model_dim = 2*config.hidden_channels
 
-        self.n_temporal_heads = n_temporal_heads
-        self.num_layers = n_layers
-        self.input_proj = nn.Linear(input_dim, self.input_embedding_dim)
-        self.d_proj = d_proj
-        self.d_ffn = d_ffn
+        self.n_temporal_heads = 1
+        self.num_layers = 1
+        self.input_proj = nn.Linear(self.input_dim, self.input_embedding_dim)
+        self.d_proj = config.hidden_channels
+        self.d_ffn = config.hidden_channels
 
         self.learnable_embedding = nn.init.xavier_uniform_(
             nn.Parameter(
@@ -50,7 +44,7 @@ class ImputeFormer(nn.Module):
             )
         )
 
-        self.readout = MLP(self.model_dim, self.model_dim, output_dim, n_layers=2)
+        self.readout = MLP(self.model_dim, self.model_dim, self.output_dim, n_layers=2)
 
         self.attn_layers_t = nn.ModuleList(
             [
@@ -78,17 +72,39 @@ class ImputeFormer(nn.Module):
         )
 
         # apply SAITS loss function to Transformer on the imputation task
-        self.saits_loss_func = SaitsLoss(ORT_weight, MIT_weight)
 
-    def forward(self, inputs: dict, training: bool = True) -> dict:
-        x, missing_mask = inputs["X"], inputs["missing_mask"]
+    def get_randmask(self, observed_mask, sample_ratio):
+        rand_for_mask = torch.rand_like(observed_mask) * observed_mask
+        rand_for_mask = rand_for_mask.reshape(len(rand_for_mask), -1)
+        for i in range(len(observed_mask)):
+            # sample_ratio = 0.2 * np.random.rand()
+            sample_ratio = sample_ratio
+            num_observed = observed_mask[i].sum().item()
+            num_masked = round(num_observed * sample_ratio)
+            rand_for_mask[i][rand_for_mask[i].topk(num_masked).indices] = -1
+        cond_mask = (rand_for_mask > 0).reshape(observed_mask.shape).float()
+        return cond_mask
+
+    def trainstep(self, inputs, ob_masks)->float:
+        cond_mask = self.get_randmask(ob_masks, self.config.missing_ratio)
+        cond_mask = cond_mask.to(self.device)
+
+        imputed = self.impute(inputs, cond_mask)
+        target_mask = ob_masks -cond_mask 
+        residual = (inputs - imputed) * target_mask
+        num_eval = target_mask.sum()
+        loss = (residual ** 2).sum() / (num_eval if num_eval > 0 else 1)
+        return loss
+
+    def impute(self, inputs, masks) -> dict:
+        x, missing_mask = copy.deepcopy(inputs), masks
 
         # x: (batch_size, in_steps, num_nodes)
         # Note that ImputeFormer is designed for Spatial-Temporal data that has the format [B, S, N, C],
         # where N is the number of nodes and C is an additional feature dimension,
         # We simply add an extra axis here for implementation.
-        x = x.unsqueeze(-1)  # [b s n c]
-        missing_mask = missing_mask.unsqueeze(-1)  # [b s n c]
+        x = rearrange(x, 'b t c n -> b t n c')
+        missing_mask = rearrange(missing_mask, 'b t c n -> b t n c')
         batch_size = x.shape[0]
         # Whiten missing values
         x = x * missing_mask
@@ -111,30 +127,13 @@ class ImputeFormer(nn.Module):
         # Readout
         x = x.permute(0, 2, 1, 3)  # [b s n c]
         reconstruction = self.readout(x)
-        reconstruction = reconstruction.squeeze(-1)  # [b s n]
-        missing_mask = missing_mask.squeeze(-1)  # [b s n]
+        reconstruction = rearrange(reconstruction, "b t n c -> b t c n")
 
         # Below is the SAITS processing pipeline:
         # replace the observed part with values from X
-        imputed_data = missing_mask * inputs["X"] + (1 - missing_mask) * reconstruction
+        imputed_data = masks * inputs + (1 - masks) * reconstruction
+        return imputed_data
 
-        # ensemble the results as a dictionary for return
-        results = {
-            "imputed_data": imputed_data,
-        }
-
-        # if in training mode, return results with losses
-        if training:
-            X_ori, indicating_mask = inputs["X_ori"], inputs["indicating_mask"]
-            loss, ORT_loss, MIT_loss = self.saits_loss_func(
-                reconstruction, X_ori, missing_mask, indicating_mask
-            )
-            results["ORT_loss"] = ORT_loss
-            results["MIT_loss"] = MIT_loss
-            # `loss` is always the item for backward propagating to update the model
-            results["loss"] = loss
-
-        return results
 
 class Dense(nn.Module):
     """A simple fully-connected layer."""
