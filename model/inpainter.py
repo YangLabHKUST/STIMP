@@ -58,7 +58,7 @@ class IAP_base(nn.Module):
         mean_ = mean.expand_as(observed_data)
         observed_data_imputed = torch.where(cond_mask.bool(), observed_data, mean_)
 
-        noisy_data = (current_alpha ** 0.5) * observed_data_imputed+ (1.0 - current_alpha) ** 0.5 * noise
+        noisy_data = (current_alpha ** 0.5) * observed_data_imputed + (1.0 - current_alpha) ** 0.5 * noise
 
         total_input = noisy_data
         predicted = self.diffusion_model(total_input, cond_mask, adj, t)

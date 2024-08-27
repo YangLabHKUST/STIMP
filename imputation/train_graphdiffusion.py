@@ -54,7 +54,7 @@ elif args.area=="PRE":
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/GraphDiffusion/".format(config.area)
+base_dir = "./log/imputation/{}/GraphDiffusion2/".format(config.area)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)

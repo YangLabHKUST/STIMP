@@ -14,12 +14,8 @@ class IAP_base(nn.Module):
         self.device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
         self.config = config
         self.num_steps = self.config.num_steps
-        self.input_projection = Conv1d_with_init(2, config.hidden_channels, 1)
-        self.output_projection1 = Conv1d_with_init(config.hidden_channels, config.hidden_channels, 1)
-        self.output_projection2= Conv1d_with_init(config.hidden_channels, 1, 1)
-        self.layers = 3
 
-        self.diffusion_model = nn.ModuleList([SpatialTemporalEncoding(config=config, low_bound=low_bound, high_bound=high_bound) for _ in range(self.layers)])
+        self.diffusion_model = SpatialTemporalEncoding(config=config, low_bound=low_bound, high_bound=high_bound)
         if config.schedule == "quad":
             self.beta = torch.linspace(
                 config.beta_start ** 0.5, config.beta_end ** 0.5, self.num_steps
@@ -57,28 +53,14 @@ class IAP_base(nn.Module):
         current_alpha = self.alpha_torch[t]  # (B,1,1,1,1)
         noise = torch.randn_like(observed_data)
 
-        noisy_data = (current_alpha ** 0.5) * observed_data + (1.0 - current_alpha) ** 0.5 * noise
         mean = (observed_data * cond_mask).sum(dim=1,keepdim=True)/(cond_mask.sum(dim=1, keepdim=True)+1e-5)
         mean_ = mean.expand_as(observed_data)
         observed_data_imputed = torch.where(cond_mask.bool(), observed_data, mean_)
 
+        noisy_data = (current_alpha ** 0.5) * observed_data_imputed + (1.0 - current_alpha) ** 0.5 * noise
+
         total_input = torch.stack([observed_data_imputed, (1-cond_mask)*noisy_data], dim=3)
-        B,T,K,C,N = total_input.shape
-        total_input = rearrange(total_input, 'b t k c n->(b t k) c n')
-        total_input = self.input_projection(total_input)
-        total_input = rearrange(total_input, '(b t k) c n->b t k c n', b=B,t=T,k=K)
-        skips = []
-        for layer in self.diffusion_model:
-            total_input, skip = layer(total_input, cond_mask, adj, t)
-            skips.append(skip)
-        
-        predicted = torch.sum(torch.stack(skips,0),0)/math.sqrt(self.layers)
-        predicted = rearrange(predicted, 'b t k c n->(b t k) c n')
-        predicted = self.output_projection1(predicted)
-        predicted = F.relu(predicted)
-        predicted = self.output_projection2(predicted)
-        predicted = rearrange(predicted, '(b t k) c n->b t k c n', b=B, t=T, k=K)
-        predicted = predicted.squeeze(3)
+        predicted = self.diffusion_model(total_input, cond_mask, adj, t)
 
         target_mask = observed_mask - cond_mask
         residual = (observed_data - predicted) * target_mask
@@ -96,29 +78,13 @@ class IAP_base(nn.Module):
         with torch.no_grad():
             for i in range(n_samples):
                 # generate noisy observation for unconditional model
-                current_sample = torch.randn_like(observed_data).to(self.device)+mean_
+                current_sample = torch.randn_like(observed_data).to(self.device) + mean_
                 observed_data_imputed = torch.where(observed_mask.bool(), observed_data, mean.expand_as(observed_data))
 
                 for t in range(self.num_steps - 1, -1, -1):
                     noisy_target =  current_sample
                     total_input = torch.stack([observed_data_imputed,(1-observed_mask)*noisy_target],dim=3)
-                    B,T,K,C,N = total_input.shape
-                    total_input = rearrange(total_input, 'b t k c n->(b t k) c n')
-                    total_input = self.input_projection(total_input)
-                    total_input = rearrange(total_input, '(b t k) c n->b t k c n', b=B,t=T,k=K)
-                    skips = []
-                    t_ = (torch.ones(B) * t).long().to(self.device)
-                    for layer in self.diffusion_model:
-                        total_input, skip = layer(total_input, observed_mask, adj, t_)
-                        skips.append(skip)
-                    
-                    predicted = torch.sum(torch.stack(skips,0),0)/math.sqrt(self.layers)
-                    predicted = rearrange(predicted, 'b t k c n->(b t k) c n')
-                    predicted = self.output_projection1(predicted)
-                    predicted = F.relu(predicted)
-                    predicted = self.output_projection2(predicted)
-                    predicted = rearrange(predicted, '(b t k) c n->b t k c n', b=B, t=T, k=K)
-                    predicted = predicted.squeeze(3)
+                    predicted = self.diffusion_model(total_input, observed_mask, adj, (torch.ones(B) * t).long().to(self.device))
 
                     coeff1 = (1-self.alpha_prev[t])*(self.alpha_hat[t])**0.5 / (1 - self.alpha[t])
                     coeff2 = ((1-self.alpha_hat[t])*(self.alpha_prev[t])**0.5) / (1 - self.alpha[t])
@@ -145,12 +111,16 @@ class SpatialTemporalEncoding(nn.Module):
         super().__init__()
         self.config = config
         self.device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+        self.input_projection = Conv1d_with_init(2, config.hidden_channels, 1)
         self.mid_projection = Conv1d_with_init(config.hidden_channels, 2*config.hidden_channels, 1) 
-        self.output_projection = Conv1d_with_init(config.hidden_channels, 2*config.hidden_channels, 1)
+        self.output_projection = Conv1d_with_init(config.hidden_channels, 1, 1)
 
         # self.spatial_encoding = GCN(self.config.hidden_channels, self.config.hidden_channels, self.config.hidden_channels//4, 3)
-        self.time_encoding = LinearAttentionTransformer(dim=self.config.hidden_channels, depth=1, heads=8, max_seq_len=16, n_local_attn_heads=0, local_attn_window_size=0)
+        self.time_encoding = LinearAttentionTransformer(dim=self.config.hidden_channels, depth=1, heads=1, max_seq_len=16, n_local_attn_heads=0, local_attn_window_size=0)
         self.diffusion_embedding = DiffusionEmbedding(num_steps=config.num_steps, embedding_dim=config.diffusion_embedding_size, projection_dim=config.hidden_channels)
+
+        self.norm1 = nn.LayerNorm(self.config.hidden_channels)
+        self.norm2 = nn.LayerNorm(self.config.hidden_channels)
 
         self.is_sea = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/is_sea.npy'.format(config.area))).to(self.device)
         self.mean = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/mean.npy'.format(config.area))).to(self.device)
@@ -158,14 +128,21 @@ class SpatialTemporalEncoding(nn.Module):
         self.is_sea = self.is_sea.bool()
 
         learnable_position_embedding = self.get_position_embeding()[:,self.is_sea]
+        self.projection1 = nn.Linear(3, config.hidden_channels//4)
         self.register_buffer("embedding", learnable_position_embedding.float())
-        # self.gn = nn.GroupNorm(4, config.hidden_channels)
+        self.gn = nn.GroupNorm(4, config.hidden_channels)
 
+        self.low_bound = low_bound
+        self.high_bound = high_bound
 
     def forward(self, x, mask, adj, diffusion_step):
         # projection
         B, T, K, C, N = x.shape
-        x_oral = x
+        x = rearrange(x, 'b t k c n->(b t k) c n')
+        x = self.input_projection(x)
+        C = x.shape[1]
+        # x = F.relu(x)
+        x = rearrange(x, '(b t k) c n -> b t k c n', b=B, t=T, k=K)
 
         diffusion_emb = self.diffusion_embedding(diffusion_step)
         diffusion_emb = diffusion_emb.unsqueeze(1).unsqueeze(1).unsqueeze(-1)
@@ -177,14 +154,26 @@ class SpatialTemporalEncoding(nn.Module):
         x = self.time_encoding(x)
         x = rearrange(x, '(b k n) t c->(b k t) c n', b=B, n=N, k=K)
 
-        # x = self.mid_projection(x)
-        # gate, filter = torch.chunk(x, 2, dim=1)
-        # x = torch.sigmoid(gate)*torch.tanh(filter)
+        #spatial encoding
+        # x_in = x
+        # position_embedding = self.get_position_embedding_()
+        # x = self.spatial_encoding(x, adj, position_embedding)
+        # x = rearrange(x, '(b k t) n c-> (b t k) c n', b=B, k=K, t=T)
+        # x_in = rearrange(x_in, '(b k t) n c-> (b t k) c n', b=B, k=K, t=T)
+        # x = x + x_in
+        # x = self.gn(x)
+
+        x = self.mid_projection(x)
+        gate, filter = torch.chunk(x, 2, dim=1)
+        x = torch.sigmoid(gate)*torch.tanh(filter)
         y = self.output_projection(x)
         y = rearrange(y, '(b t k) c n -> b t k c n', b=B, k=K, t=T)
-        residual, skip = torch.chunk(y, 2, dim=3)
+        y = y.squeeze(3)
 
-        return (residual + x_oral)/math.sqrt(2.0), skip
+        low_bound = self.low_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(y)
+        high_bound = self.high_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(y)
+        y = torch.clamp(y, low_bound, high_bound)
+        return y
 
     def get_position_embeding(self):
         height = self.config.height
@@ -231,3 +220,32 @@ class DiffusionEmbedding(nn.Module):
         table = steps * frequencies  # (T,dim)
         table = torch.cat([torch.sin(table), torch.cos(table)], dim=1)  # (T,dim*2)
         return table
+
+class GCN(nn.Module):
+    def __init__(self,
+                 c_in, # dimensionality of input features
+                 c_out, # dimensionality of output features
+                 c_hid,
+                 temp=1, # temperature parameter
+                 ):
+
+        super().__init__()
+
+        self.linear = nn.Linear(c_in, c_out, bias=False)
+        self.temp = temp
+
+        # Initialization
+        nn.init.uniform_(self.linear.weight.data, -np.sqrt(6 / (c_in + c_out)), np.sqrt(6 / (c_in + c_out)))
+        # self.weights_pool = nn.init.xavier_normal_(nn.Parameter(torch.FloatTensor(c_hid, c_in, c_out)))
+
+    def forward(self,
+                node_feats, # input node features
+                adj_matrix, # adjacency matrix including self-connections
+                position_embedding
+                ):
+
+        # Apply linear layer and sort nodes by head
+        node_feats = torch.matmul(adj_matrix, node_feats)
+        node_feats = self.linear(node_feats)
+        return node_feats
+
