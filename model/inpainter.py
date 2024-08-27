@@ -64,11 +64,14 @@ class IAP_base(nn.Module):
         predicted = self.diffusion_model(total_input, cond_mask, adj, t)
 
         target_mask = observed_mask - cond_mask
-        residual = (observed_data - predicted)
+        residual = (observed_data - predicted) * target_mask
         num_eval = target_mask.sum()
-        loss = (residual ** 2).mean()
+        loss = (residual ** 2).sum()/(num_eval if num_eval>0 else 1)
+        residual_at = (observed_data - predicted) * (1-target_mask)
+        num_eval_at = (1-target_mask).sum()
+        loss_autoregressive = (residual_at ** 2).sum()/(num_eval_at if num_eval_at>0 else 1)
 
-        return loss
+        return loss + 0.1*loss_autoregressive
 
     def impute(self, observed_data, observed_mask, adj, n_samples):
         B, T, K, N = observed_data.shape

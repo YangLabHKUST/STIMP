@@ -83,7 +83,7 @@ class IAP_base(nn.Module):
 
                 for t in range(self.num_steps - 1, -1, -1):
                     noisy_target =  current_sample
-                    total_input = torch.stack([observed_data,(1-observed_mask)*noisy_target],dim=3)
+                    total_input = torch.stack([observed_data_imputed,(1-observed_mask)*noisy_target],dim=3)
                     predicted = self.diffusion_model(total_input, observed_mask, adj, (torch.ones(B) * t).long().to(self.device))
 
                     coeff1 = (1-self.alpha_prev[t])*(self.alpha_hat[t])**0.5 / (1 - self.alpha[t])
