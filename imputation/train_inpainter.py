@@ -108,7 +108,6 @@ for epoch in train_process:
     train_process.write(log_buffer)
 
     if epoch % config.test_freq == 0 and epoch != 0:
-        torch.save(model, base_dir + 'best.pt')
         chla_mae_list, chla_mse_list = [], []
         imputed_data_list = []
         for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):

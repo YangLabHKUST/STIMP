@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import math
 from einops import rearrange, repeat
 from torch.nn import Parameter
+import copy 
 
 
 class IAP_base(nn.Module):
@@ -59,13 +60,13 @@ class IAP_base(nn.Module):
 
         noisy_data = (current_alpha ** 0.5) * observed_data_imputed+ (1.0 - current_alpha) ** 0.5 * noise
 
-        total_input = cond_mask*observed_data_imputed + (1-cond_mask)*noisy_data
+        total_input = noisy_data
         predicted = self.diffusion_model(total_input, cond_mask, adj, t)
 
         target_mask = observed_mask - cond_mask
-        residual = (observed_data - predicted) * target_mask
+        residual = (observed_data - predicted)
         num_eval = target_mask.sum()
-        loss = (residual ** 2).sum() / (num_eval if num_eval > 0 else 1)
+        loss = (residual ** 2).mean()
 
         return loss
 
@@ -79,11 +80,15 @@ class IAP_base(nn.Module):
             for i in range(n_samples):
                 # generate noisy observation for unconditional model
                 current_sample = torch.randn_like(observed_data).to(self.device) + mean_
+                init_noise = copy.deepcopy(current_sample)
                 observed_data_imputed = torch.where(observed_mask.bool(), observed_data, mean.expand_as(observed_data))
 
                 for t in range(self.num_steps - 1, -1, -1):
+                    t_ = (torch.ones(B) * t).long().to(self.device)
+                    current_alpha = self.alpha_torch[t_]  # (B,1,1,1,1)
+                    noisy_data = (current_alpha ** 0.5) * observed_data + (1.0 - current_alpha) ** 0.5 * init_noise
                     noisy_target =  current_sample
-                    total_input = observed_mask*observed_data_imputed + (1-observed_mask)*noisy_target
+                    total_input = observed_mask*noisy_data + (1-observed_mask)*noisy_target
                     predicted = self.diffusion_model(total_input, observed_mask, adj, (torch.ones(B) * t).long().to(self.device))
 
                     coeff1 = (1-self.alpha_prev[t])*(self.alpha_hat[t])**0.5 / (1 - self.alpha[t])

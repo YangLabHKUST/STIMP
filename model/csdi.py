@@ -17,7 +17,7 @@ class IAP_base(nn.Module):
         self.input_projection = Conv1d_with_init(2, config.hidden_channels, 1)
         self.output_projection1 = Conv1d_with_init(config.hidden_channels, config.hidden_channels, 1)
         self.output_projection2= Conv1d_with_init(config.hidden_channels, 1, 1)
-        self.layers = 2
+        self.layers = 3
 
         self.diffusion_model = nn.ModuleList([SpatialTemporalEncoding(config=config, low_bound=low_bound, high_bound=high_bound) for _ in range(self.layers)])
         if config.schedule == "quad":
@@ -81,7 +81,7 @@ class IAP_base(nn.Module):
         predicted = predicted.squeeze(3)
 
         target_mask = observed_mask - cond_mask
-        residual = (noise - predicted) * target_mask
+        residual = (observed_data - predicted) * target_mask
         num_eval = target_mask.sum()
         loss = (residual ** 2).sum() / (num_eval if num_eval > 0 else 1)
 
@@ -120,9 +120,9 @@ class IAP_base(nn.Module):
                     predicted = rearrange(predicted, '(b t k) c n->b t k c n', b=B, t=T, k=K)
                     predicted = predicted.squeeze(3)
 
-                    coeff1 = 1 / self.alpha_hat[t] ** 0.5
-                    coeff2 = (1 - self.alpha_hat[t]) / (1 - self.alpha[t]) ** 0.5
-                    current_sample = coeff1 * (current_sample - coeff2 * predicted)
+                    coeff1 = (1-self.alpha_prev[t])*(self.alpha_hat[t])**0.5 / (1 - self.alpha[t])
+                    coeff2 = ((1-self.alpha_hat[t])*(self.alpha_prev[t])**0.5) / (1 - self.alpha[t])
+                    current_sample = coeff1 *current_sample + coeff2 * predicted
                     if t > 0:
                         noise = torch.randn_like(current_sample)
                         sigma = (
@@ -177,9 +177,9 @@ class SpatialTemporalEncoding(nn.Module):
         x = self.time_encoding(x)
         x = rearrange(x, '(b k n) t c->(b k t) c n', b=B, n=N, k=K)
 
-        x = self.mid_projection(x)
-        gate, filter = torch.chunk(x, 2, dim=1)
-        x = torch.sigmoid(gate)*torch.tanh(filter)
+        # x = self.mid_projection(x)
+        # gate, filter = torch.chunk(x, 2, dim=1)
+        # x = torch.sigmoid(gate)*torch.tanh(filter)
         y = self.output_projection(x)
         y = rearrange(y, '(b t k) c n -> b t k c n', b=B, k=K, t=T)
         residual, skip = torch.chunk(y, 2, dim=3)
