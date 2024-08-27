@@ -17,6 +17,7 @@ from model.cross_models.cross_former import Crossformer
 from torchtsmixer import TSMixer
 from model.mtgnn import MTGNN
 from model.graphtransformer import GraphTransformer
+from iTransformer import iTransformer
 import numpy as np
 from utils import AverageMeter
 
@@ -70,11 +71,13 @@ high_bound = torch.from_numpy(train_dataset.max).float().to(device)
 mean = torch.from_numpy(train_dataset.mean).float().to(device)
 std = torch.from_numpy(train_dataset.std).float().to(device)
    
-assert config.method in ["TSMixer", "CrossFormer"], print("{} not implement".format(config.method))
+assert config.method in ["TSMixer", "CrossFormer","iTransformer"], print("{} not implement".format(config.method))
 if config.method == "TSMixer":
     model = TSMixer(config.in_len, config.out_len, input_channels=1, output_channels=1)
 elif config.method == "CrossFormer":
     model = Crossformer(1, config.in_len, config.out_len, 10)
+elif config.method == "iTransformer":
+    model = iTransformer(num_variates=1,lookback_len=config.in_len, dim=config.hidden_channels, depth=6, heads=8, pred_length=config.out_len, num_tokens_per_variate=1, use_reversible_instance_norm=True)
 
 model = model.to(device)
 

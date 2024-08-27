@@ -37,7 +37,7 @@ parser.add_argument('--missing_ratio', type=float, default=0.1)
 
 # args for diffusion
 parser.add_argument('--beta_start', type=float, default=0.0001, help='beta start from this')
-parser.add_argument('--beta_end', type=float, default=0.5, help='beta end to this')
+parser.add_argument('--beta_end', type=float, default=0.2, help='beta end to this')
 parser.add_argument('--num_steps', type=float, default=50, help='denoising steps')
 parser.add_argument('--num_samples', type=int, default=10, help='n datasets')
 parser.add_argument('--schedule', type=str, default='quad', help='noise schedule type')
