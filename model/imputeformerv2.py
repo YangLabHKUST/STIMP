@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from einops import repeat,rearrange
 import copy
+import numpy as np
 
 
 class ImputeFormer(nn.Module):
@@ -20,10 +21,10 @@ class ImputeFormer(nn.Module):
     ):
         super().__init__()
 
-        nodes={"PRE": 4443, "MEXICO": 2907}
+        adj = np.load("/home/mafzhang/data/{}/8d/adj.npy".format(config.area))
         self.config = config
         self.device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
-        self.n_nodes = nodes[config.area]
+        self.n_nodes = adj.shape[0]
         self.in_steps = config.in_len
         self.out_steps = config.in_len
         self.input_dim = 1
