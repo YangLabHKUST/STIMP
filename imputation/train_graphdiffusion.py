@@ -49,12 +49,14 @@ config = parser.parse_args()
 
 if config.area=="MEXICO":
     config.height, config.width = 36, 120
-elif args.area=="PRE":
+elif config.area=="PRE":
     config.height, config.width = 60, 96
+elif config.area=="Chesapeake":
+    config.height, config.width = 60, 48
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/GraphDiffusion2/".format(config.area)
+base_dir = "./log/imputation/{}/GraphDiffusion/".format(config.area)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)

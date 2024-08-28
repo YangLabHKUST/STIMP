@@ -55,8 +55,10 @@ config = parser.parse_args()
 
 if config.area=="MEXICO":
     config.height, config.width = 36, 120
-elif args.area=="PRE":
+elif config.area=="PRE":
     config.height, config.width = 60, 96
+elif config.area=="Chesapeake":
+    config.height, config.width = 60, 48
 else:
     print("Not Implement")
 

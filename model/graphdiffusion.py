@@ -84,7 +84,7 @@ class IAP_base(nn.Module):
                 observed_data_imputed = torch.where(observed_mask.bool(), observed_data, mean.expand_as(observed_data))
 
                 for t in range(self.num_steps - 1, -1, -1):
-                    noisy_target =  current_sample
+                    noisy_target =  current_sample 
                     total_input = torch.stack([observed_data_imputed,(1-observed_mask)*noisy_target],dim=3)
                     predicted = self.diffusion_model(total_input, observed_mask, adj, (torch.ones(B) * t).long().to(self.device))
 
@@ -175,7 +175,7 @@ class SpatialTemporalEncoding(nn.Module):
 
         low_bound = self.low_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(y)
         high_bound = self.high_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(y)
-        y = torch.clamp(y, low_bound, high_bound)
+        # y = torch.clamp(y, low_bound, high_bound)
         return y
 
     def get_position_embeding(self):
