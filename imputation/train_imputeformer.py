@@ -120,13 +120,11 @@ for epoch in train_process:
             chla_mse = masked_mse(imputed_data[:, :, 0].detach().cpu(), datas[:, :, 0].cpu(), mask[:, :, 0])
             chla_mae_list.append(chla_mae)
             chla_mse_list.append(chla_mse)
-            imputed_data_list.append(imputed_data)
 
         chla_mae = torch.stack(chla_mae_list, 0)
         chla_mse = torch.stack(chla_mse_list, 0)
         chla_mae = chla_mae[chla_mae != 0].mean()
         chla_mse = chla_mse[chla_mse != 0].mean()
-        imputed_datas = torch.cat(imputed_data_list,dim=0)
 
         log_buffer = "test mae: chla-{:.4f}, ".format(chla_mae)
         log_buffer += "test mse: chla-{:.4f}".format(chla_mse)
