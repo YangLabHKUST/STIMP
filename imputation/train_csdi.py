@@ -37,7 +37,7 @@ parser.add_argument('--missing_ratio', type=float, default=0.1)
 
 # args for diffusion
 parser.add_argument('--beta_start', type=float, default=0.0001, help='beta start from this')
-parser.add_argument('--beta_end', type=float, default=0.2, help='beta end to this')
+parser.add_argument('--beta_end', type=float, default=0.5, help='beta end to this')
 parser.add_argument('--num_steps', type=float, default=50, help='denoising steps')
 parser.add_argument('--num_samples', type=int, default=10, help='n datasets')
 parser.add_argument('--schedule', type=str, default='quad', help='noise schedule type')
@@ -108,7 +108,6 @@ for epoch in train_process:
     train_process.write(log_buffer)
 
     if epoch % config.test_freq == 0 and epoch != 0:
-        torch.save(model, base_dir + 'best.pt')
         chla_mae_list, chla_mse_list = [], []
         imputed_data_list = []
         for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):

@@ -77,7 +77,7 @@ if config.method == "TSMixer":
 elif config.method == "CrossFormer":
     model = Crossformer(1, config.in_len, config.out_len, 10)
 elif config.method == "iTransformer":
-    model = iTransformer(num_variates=1,lookback_len=config.in_len, dim=config.hidden_channels, depth=6, heads=8, pred_length=config.out_len, num_tokens_per_variate=1, use_reversible_instance_norm=True)
+    model = iTransformer(num_variates=1,lookback_len=config.in_len, dim=config.hidden_dim, depth=6, heads=8, pred_length=config.out_len, num_tokens_per_variate=1, use_reversible_instance_norm=True)
 
 model = model.to(device)
 
@@ -103,6 +103,8 @@ for epoch in train_process:
         B, T, C, N = datas.shape
         datas = rearrange(datas, 'b t c n -> (b n) t c')
         prediction = model(datas)
+        if isinstance(prediction, dict):
+            prediction = prediction[config.out_len]
         prediction = rearrange(prediction, '(b n) t c -> b t c n', b=B, n=N)
         prediction = prediction*stdev + means
         loss = masked_mse(prediction, labels, label_masks)
@@ -137,6 +139,8 @@ for epoch in train_process:
 
                 datas = rearrange(datas, 'b t c n -> (b n) t c')
                 prediction = model(datas)
+                if isinstance(prediction, dict):
+                    prediction = prediction[config.out_len]
                 prediction = rearrange(prediction, '(b n) t c -> b t c n', b=B, n=N)
                 prediction = prediction*stdev + means
                 mask = label_masks.cpu()

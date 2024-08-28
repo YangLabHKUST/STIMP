@@ -55,11 +55,13 @@ class IAP_base(nn.Module):
 
         mean = (observed_data * cond_mask).sum(dim=1,keepdim=True)/(cond_mask.sum(dim=1, keepdim=True)+1e-5)
         mean_ = mean.expand_as(observed_data)
-        observed_data_imputed = torch.where(cond_mask.bool(), observed_data, mean_)
 
-        noisy_data = (current_alpha ** 0.5) * observed_data_imputed + (1.0 - current_alpha) ** 0.5 * noise
+        observed_data_imputed_1 = torch.where(cond_mask.bool(), observed_data, mean_)
+        observed_data_imputed_2 = torch.where(observed_mask.bool(), observed_data, mean_)
+        noisy_data = (current_alpha ** 0.5) * observed_data_imputed_2 + (1.0 - current_alpha) ** 0.5 * noise
 
-        total_input = torch.stack([observed_data_imputed, (1-cond_mask)*noisy_data], dim=3)
+        total_input = torch.stack([observed_data_imputed_1, (1-cond_mask)*noisy_data], dim=3)
+
         predicted = self.diffusion_model(total_input, cond_mask, adj, t)
 
         target_mask = observed_mask - cond_mask
@@ -78,7 +80,7 @@ class IAP_base(nn.Module):
         with torch.no_grad():
             for i in range(n_samples):
                 # generate noisy observation for unconditional model
-                current_sample = torch.randn_like(observed_data).to(self.device) + mean_
+                current_sample = torch.randn_like(observed_data).to(self.device) 
                 observed_data_imputed = torch.where(observed_mask.bool(), observed_data, mean.expand_as(observed_data))
 
                 for t in range(self.num_steps - 1, -1, -1):

@@ -59,10 +59,11 @@ class IAP_base(nn.Module):
 
         mean = (observed_data * cond_mask).sum(dim=1,keepdim=True)/(cond_mask.sum(dim=1, keepdim=True)+1e-5)
         mean_ = mean.expand_as(observed_data)
-        observed_data_imputed = torch.where(cond_mask.bool(), observed_data, mean_)
-        noisy_data = (current_alpha ** 0.5) * observed_data_imputed + (1.0 - current_alpha) ** 0.5 * noise
+        observed_data_imputed_1 = torch.where(cond_mask.bool(), observed_data, mean_)
+        observed_data_imputed_2 = torch.where(observed_mask.bool(), observed_data, mean_)
+        noisy_data = (current_alpha ** 0.5) * observed_data_imputed_2 + (1.0 - current_alpha) ** 0.5 * noise
 
-        total_input = torch.stack([observed_data_imputed, (1-cond_mask)*noisy_data], dim=3)
+        total_input = torch.stack([observed_data_imputed_1, (1-cond_mask)*noisy_data], dim=3)
         B,T,K,C,N = total_input.shape
         total_input = rearrange(total_input, 'b t k c n->(b t k) c n')
         total_input = self.input_projection(total_input)
@@ -81,7 +82,7 @@ class IAP_base(nn.Module):
         predicted = predicted.squeeze(3)
 
         target_mask = observed_mask - cond_mask
-        residual = (noise - predicted) * target_mask
+        residual = (observed_data - predicted) * target_mask
         num_eval = target_mask.sum()
         loss = (residual ** 2).sum() / (num_eval if num_eval > 0 else 1)
 
@@ -96,7 +97,7 @@ class IAP_base(nn.Module):
         with torch.no_grad():
             for i in range(n_samples):
                 # generate noisy observation for unconditional model
-                current_sample = torch.randn_like(observed_data).to(self.device)+mean_
+                current_sample = torch.randn_like(observed_data).to(self.device)
                 observed_data_imputed = torch.where(observed_mask.bool(), observed_data, mean.expand_as(observed_data))
 
                 for t in range(self.num_steps - 1, -1, -1):
@@ -120,9 +121,12 @@ class IAP_base(nn.Module):
                     predicted = rearrange(predicted, '(b t k) c n->b t k c n', b=B, t=T, k=K)
                     predicted = predicted.squeeze(3)
 
-                    coeff1 = 1 / self.alpha_hat[t] ** 0.5
-                    coeff2 = (1 - self.alpha_hat[t]) / (1 - self.alpha[t]) ** 0.5
-                    current_sample = coeff1 * (current_sample - coeff2 * predicted)
+                    # coeff1 = 1 / self.alpha_hat[t] ** 0.5
+                    # coeff2 = (1 - self.alpha_hat[t]) / (1 - self.alpha[t]) ** 0.5
+                    # current_sample = coeff1 * (current_sample - coeff2 * predicted)
+                    coeff1 = (1-self.alpha_prev[t])*(self.alpha_hat[t])**0.5 / (1 - self.alpha[t])
+                    coeff2 = ((1-self.alpha_hat[t])*(self.alpha_prev[t])**0.5) / (1 - self.alpha[t])
+                    current_sample = coeff1 *current_sample + coeff2 * predicted
                     if t > 0:
                         noise = torch.randn_like(current_sample)
                         sigma = (

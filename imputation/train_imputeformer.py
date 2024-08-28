@@ -21,7 +21,7 @@ parser.add_argument('--area', type=str, default='MEXICO', help='which bay area w
 
 # basic args
 parser.add_argument('--epochs', type=int, default=500, help='epochs')
-parser.add_argument('--batch_size', type=int, default=16, help='batch size')
+parser.add_argument('--batch_size', type=int, default=8, help='batch size')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--wd', type=float, default=1e-5, help='weight decay')
 parser.add_argument('--test_freq', type=int, default=500, help='test per n epochs')
@@ -108,17 +108,16 @@ for epoch in train_process:
     train_process.write(log_buffer)
 
     if epoch % config.test_freq == 0 and epoch != 0:
-        torch.save(model, base_dir + 'best.pt')
         chla_mae_list, chla_mse_list = [], []
         imputed_data_list = []
         for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
-            datas, data_ob_masks, data_gt_masks, labels, label_masks = datas.float().to(device), data_ob_masks.to(device), data_gt_masks.to(device), labels.to(device), label_masks.to(device)
+            datas, data_ob_masks, data_gt_masks = datas.float().to(device), data_ob_masks.to(device), data_gt_masks.to(device)
 
             imputed_data = model.impute(datas, data_gt_masks)
 
-            mask = (data_ob_masks - data_gt_masks).cpu()
-            chla_mae = masked_mae(imputed_data[:, :, 0], datas[:, :, 0].cpu(), mask[:, :, 0])
-            chla_mse = masked_mse(imputed_data[:, :, 0], datas[:, :, 0].cpu(), mask[:, :, 0])
+            mask = (data_ob_masks - data_gt_masks).detach().cpu()
+            chla_mae = masked_mae(imputed_data[:, :, 0].detach().cpu(), datas[:, :, 0].cpu(), mask[:, :, 0])
+            chla_mse = masked_mse(imputed_data[:, :, 0].detach().cpu(), datas[:, :, 0].cpu(), mask[:, :, 0])
             chla_mae_list.append(chla_mae)
             chla_mse_list.append(chla_mse)
             imputed_data_list.append(imputed_data)
