@@ -28,6 +28,8 @@ class IAP_base(nn.Module):
         self.alpha = torch.cumprod(self.alpha_hat, dim=0)
         self.alpha_prev = F.pad(self.alpha[:-1], (1, 0), value=1.)
         self.alpha_torch = self.alpha.float().to(self.device).unsqueeze(1).unsqueeze(1).unsqueeze(1)
+        self.low_bound = low_bound
+        self.high_bound = high_bound
 
     def get_randmask(self, observed_mask, sample_ratio):
         rand_for_mask = torch.rand_like(observed_mask) * observed_mask
@@ -56,11 +58,11 @@ class IAP_base(nn.Module):
         mean = (observed_data * cond_mask).sum(dim=1,keepdim=True)/(cond_mask.sum(dim=1, keepdim=True)+1e-5)
         mean_ = mean.expand_as(observed_data)
 
-        observed_data_imputed_1 = torch.where(cond_mask.bool(), observed_data, mean_)
-        observed_data_imputed_2 = torch.where(observed_mask.bool(), observed_data, mean_)
+        # observed_data_imputed_1 = torch.where(cond_mask.bool(), observed_data, mean_)
+        # observed_data_imputed_2 = torch.where(observed_mask.bool(), observed_data, mean_)
         noisy_data = (current_alpha ** 0.5) * observed_data + (1.0 - current_alpha) ** 0.5 * noise
 
-        total_input = torch.stack([observed_data_imputed_1, (1-cond_mask)*noisy_data], dim=3)
+        total_input = torch.stack([observed_data*cond_mask, (1-cond_mask)*noisy_data], dim=3)
 
         predicted = self.diffusion_model(total_input, cond_mask, adj, t)
 
@@ -85,8 +87,11 @@ class IAP_base(nn.Module):
 
                 for t in range(self.num_steps - 1, -1, -1):
                     noisy_target =  current_sample 
-                    total_input = torch.stack([observed_data,(1-observed_mask)*noisy_target],dim=3)
+                    total_input = torch.stack([observed_data*observed_mask,(1-observed_mask)*noisy_target],dim=3)
                     predicted = self.diffusion_model(total_input, observed_mask, adj, (torch.ones(B) * t).long().to(self.device))
+                    low_bound = self.low_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(predicted)
+                    high_bound = self.high_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(predicted)
+                    predicted = torch.clamp(predicted, low_bound, high_bound)
 
                     coeff1 = (1-self.alpha_prev[t])*(self.alpha_hat[t])**0.5 / (1 - self.alpha[t])
                     coeff2 = ((1-self.alpha_hat[t])*(self.alpha_prev[t])**0.5) / (1 - self.alpha[t])
