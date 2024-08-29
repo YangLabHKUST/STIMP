@@ -59,11 +59,10 @@ class IAP_base(nn.Module):
 
         mean = (observed_data * cond_mask).sum(dim=1,keepdim=True)/(cond_mask.sum(dim=1, keepdim=True)+1e-5)
         mean_ = mean.expand_as(observed_data)
-        observed_data_imputed_1 = torch.where(cond_mask.bool(), observed_data, mean_)
-        observed_data_imputed_2 = torch.where(observed_mask.bool(), observed_data, mean_)
-        noisy_data = (current_alpha ** 0.5) * observed_data_imputed_2 + (1.0 - current_alpha) ** 0.5 * noise
+        observed_data_imputed = torch.where(cond_mask.bool(), observed_data, mean_)
+        noisy_data = (current_alpha ** 0.5) * observed_data + (1.0 - current_alpha) ** 0.5 * noise
 
-        total_input = torch.stack([observed_data_imputed_1, (1-cond_mask)*noisy_data], dim=3)
+        total_input = torch.stack([observed_data_imputed, (1-cond_mask)*noisy_data], dim=3)
         B,T,K,C,N = total_input.shape
         total_input = rearrange(total_input, 'b t k c n->(b t k) c n')
         total_input = self.input_projection(total_input)
