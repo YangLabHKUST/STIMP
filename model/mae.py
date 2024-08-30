@@ -14,7 +14,7 @@ class MaskedAutoEncoder(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
         self.config = config
-        self.patch_size = 4
+        self.patch_size = 2
         self.device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
         self.cls_token = torch.nn.Parameter(torch.zeros(1, 1, self.config.embedding_size))
         self.input_projection = Conv1d_with_init(1, config.hidden_channels, 1)
