@@ -53,7 +53,7 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-flag = "with_imputation"
+flag = "without_imputation"
 base_dir = "./log/prediction/{}/{}/{}/".format(config.area, config.method, flag)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
@@ -102,7 +102,7 @@ for epoch in train_process:
         prediction = model(datas)
         prediction = prediction*stdev + means
 
-        loss = masked_mse(prediction, labels, label_masks)
+        loss = masked_mse(prediction[:,:,:,is_sea], labels[:,:,:,is_sea], label_masks[:,:,:,is_sea])
 
         loss.backward()
         optimizer.step()
@@ -136,9 +136,9 @@ for epoch in train_process:
                 mask = label_masks.cpu()
                 label = labels.cpu()
 
-                predictions.append(prediction[:,:,0].cpu())
-                labels_list.append(label[:,:,0])
-                label_masks_list.append(mask[:,:,0])
+                predictions.append(prediction[:,:,0,is_sea].cpu())
+                labels_list.append(label[:,:,0,is_sea.cpu()])
+                label_masks_list.append(mask[:,:,0,is_sea.cpu()])
 
         predictions = torch.cat(predictions, 0)
         labels = torch.cat(labels_list, 0)
