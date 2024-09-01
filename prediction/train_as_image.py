@@ -93,15 +93,10 @@ for epoch in train_process:
     end = time.time()
     for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader):
         datas, data_ob_masks, data_gt_masks, labels, label_masks = datas.float().to(device), data_ob_masks.to(device), data_gt_masks.to(device), labels.to(device), label_masks.to(device)
-        means = datas.mean(1, keepdim=True).detach()
-        datas = datas - means
-        stdev = torch.sqrt(torch.var(datas, dim=1, keepdim=True, unbiased=False) + 1e-5)
-        datas/= stdev
 
         prediction = model(datas)
-        prediction = prediction*stdev + means
 
-        loss = masked_mse(prediction, labels, label_masks)
+        loss = masked_mse(prediction[:,:,:,is_sea], labels[:,:,:,is_sea], label_masks[:,:,:,is_sea])
 
         loss.backward()
         optimizer.step()
@@ -124,25 +119,18 @@ for epoch in train_process:
         with torch.no_grad():
             for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
                 datas, data_ob_masks, data_gt_masks, labels, label_masks = datas.float().to(device), data_ob_masks.to(device), data_gt_masks.to(device), labels.to(device), label_masks.to(device)
-                datas_list.append(datas.cpu())
-                means = datas.mean(1, keepdim=True).detach()
-                datas = datas - means
-                stdev = torch.sqrt(torch.var(datas, dim=1, keepdim=True, unbiased=False) + 1e-5)
-                datas/= stdev
 
                 prediction = model(datas)
-                prediction = prediction*stdev + means
                 mask = label_masks.cpu()
                 label = labels.cpu()
 
-                predictions.append(prediction[:,:,0].cpu())
-                labels_list.append(label[:,:,0])
-                label_masks_list.append(mask[:,:,0])
+                predictions.append(prediction[:,:,0,is_sea].cpu())
+                labels_list.append(label[:,:,0,is_sea])
+                label_masks_list.append(mask[:,:,0,is_sea])
 
         predictions = torch.cat(predictions, 0)
         labels = torch.cat(labels_list, 0)
         label_masks = torch.cat(label_masks_list, 0)
-        datas = torch.cat(datas_list, 0)
         chla_mae = (torch.abs(predictions - labels) * label_masks).sum([1]) / (label_masks.sum([1]) + 1e-5)
         chla_mse = (((predictions - labels) * label_masks) ** 2).sum([1]) / (label_masks.sum([1]) + 1e-5)
         chla_mae = chla_mae.mean(0)
