@@ -179,7 +179,7 @@ class SpatialTemporalEncoding(nn.Module):
 
         low_bound = self.low_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(y)
         high_bound = self.high_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(y)
-        # y = torch.clamp(y, low_bound, high_bound)
+        y = torch.clamp(y, low_bound, high_bound)
         return y
 
     def get_position_embeding(self):
