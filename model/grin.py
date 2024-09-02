@@ -11,12 +11,12 @@ class GRINet(nn.Module):
                  d_ff,
                  ff_dropout,
                  n_layers=1,
-                 kernel_size=2,
+                 kernel_size=5,
                  decoder_order=1,
                  global_att=False,
                  d_u=0,
                  d_emb=0,
-                 layer_norm=False,
+                 layer_norm=True,
                  merge='mean',
                  impute_only_holes=True):
         super(GRINet, self).__init__()
@@ -138,7 +138,7 @@ class GRIL(nn.Module):
                  u_size=None,
                  n_layers=1,
                  dropout=0.,
-                 kernel_size=2,
+                 kernel_size=5,
                  decoder_order=1,
                  global_att=False,
                  support_len=2,
@@ -265,12 +265,12 @@ class BiGRIL(nn.Module):
                  dropout=0.,
                  n_nodes=None,
                  support_len=2,
-                 kernel_size=2,
+                 kernel_size=5,
                  decoder_order=1,
                  global_att=False,
                  u_size=0,
                  embedding_size=0,
-                 layer_norm=False,
+                 layer_norm=True,
                  merge='mean'):
         super(BiGRIL, self).__init__()
         self.fwd_rnn = GRIL(input_size=input_size,
