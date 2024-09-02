@@ -90,7 +90,7 @@ class IAP_base(nn.Module):
                     predicted = self.diffusion_model(total_input, observed_mask, adj, (torch.ones(B) * t).long().to(self.device))
                     low_bound = self.low_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(predicted)
                     high_bound = self.high_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(predicted)
-                    predicted = torch.clamp(predicted, low_bound, high_bound)
+                    # predicted = torch.clamp(predicted, low_bound, high_bound)
 
                     coeff1 = (1-self.alpha_prev[t])*(self.alpha_hat[t])**0.5 / (1 - self.alpha[t])
                     coeff2 = ((1-self.alpha_hat[t])*(self.alpha_prev[t])**0.5) / (1 - self.alpha[t])
