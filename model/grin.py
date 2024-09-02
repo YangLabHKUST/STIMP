@@ -271,7 +271,7 @@ class BiGRIL(nn.Module):
                  u_size=0,
                  embedding_size=0,
                  layer_norm=True,
-                 merge='mlp'):
+                 merge='sum'):
         super(BiGRIL, self).__init__()
         self.fwd_rnn = GRIL(input_size=input_size,
                             hidden_size=hidden_size,
@@ -304,16 +304,7 @@ class BiGRIL(nn.Module):
         else:
             self.register_parameter('emb', None)
 
-        if merge == 'mlp':
-            self._impute_from_states = True
-            self.out = nn.Sequential(
-            nn.Conv2d(in_channels=4 * hidden_size + input_size + embedding_size,
-                        out_channels=ff_size, kernel_size=1),
-            nn.ReLU(),
-            nn.Dropout(ff_dropout),
-            nn.Conv2d(in_channels=ff_size, out_channels=input_size, kernel_size=1)
-            )
-        elif merge in ['mean', 'sum', 'min', 'max']:
+        if merge in ['mean', 'sum', 'min', 'max']:
             self._impute_from_states = False
             self.out = getattr(torch, merge)
         else:
