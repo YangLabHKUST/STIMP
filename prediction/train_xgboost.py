@@ -74,8 +74,8 @@ model = XGBRegressor()
 train_datas = []
 train_labels = []
 for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader):
-    datas = (datas - mean)/(std+1e-5)
-    labels = (labels - mean)/(std+1e-5)
+    datas = datas - mean
+    labels = labels - mean
 
     datas = torch.permute(datas, (0, 3, 1, 2)).numpy()
     labels = torch.permute(labels, (0, 3, 1, 2)).numpy()
@@ -97,13 +97,13 @@ label_masks_list = []
 with torch.no_grad():
     for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
         b, t, c, n = datas.shape
-        datas = (datas - mean)/(std+1e-5)
+        datas = datas - mean
         datas = torch.permute(datas, (0, 3, 1, 2))
         datas = datas.reshape(-1, t * c)
         prediction = model.predict(datas)
         prediction = prediction.reshape(b, n, 1, -1)
         prediction = np.moveaxis(prediction, [1, -1], [-1, 1])  # b t c n
-        prediction = prediction* std + mean
+        prediction = prediction + mean
         prediction = torch.from_numpy(prediction)
         mask = label_masks.cpu()
         label = labels.cpu()
