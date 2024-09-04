@@ -21,7 +21,7 @@ parser.add_argument('--area', type=str, default='MEXICO', help='which bay area w
 
 # basic args
 parser.add_argument('--epochs', type=int, default=500, help='epochs')
-parser.add_argument('--batch_size', type=int, default=8, help='batch size')
+parser.add_argument('--batch_size', type=int, default=4, help='batch size')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--wd', type=float, default=1e-4, help='weight decay')
 parser.add_argument('--test_freq', type=int, default=500, help='test per n epochs')
