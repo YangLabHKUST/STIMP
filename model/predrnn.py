@@ -7,7 +7,7 @@ class PredRNN(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        config.patch_size = 4
+        config.patch_size = 6
         self.frame_channel = config.patch_size**2
         height = config.height//config.patch_size
         width = config.width//config.patch_size
@@ -16,7 +16,7 @@ class PredRNN(nn.Module):
         self.n_layers = 2
         for i in range(self.n_layers):
             in_channel = self.frame_channel if i==0 else config.hidden_dim
-            self.cell_list.append(SpatioTemporalLSTMCell(in_channel, self.config.hidden_dim, height, width, 3, 1, True))
+            self.cell_list.append(SpatioTemporalLSTMCell(in_channel, self.config.hidden_dim, height, width, 5, 1, True))
         
         self.conv_last = nn.Conv2d(config.hidden_dim, self.frame_channel, kernel_size=1, stride=1, padding=0, bias=False)
         self.device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
