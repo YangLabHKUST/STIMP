@@ -143,4 +143,4 @@ for epoch in train_process:
         print(log_buffer)
         logging.info(log_buffer)
         if chla_mae<best_mae_chla:
-            torch.save(model, base_dir+'best.pt')
+            torch.save(model, base_dir+'best_{}.pt'.format(config.missing_ratio))
