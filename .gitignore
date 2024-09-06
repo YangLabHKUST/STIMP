@@ -7,3 +7,4 @@ log/prediction/PRE/GraphTransformer/with_imputation/generate_embedding.py
 log/prediction/PRE/GraphTransformer/with_imputation/merge.py
 log/prediction/PRE/XGBoost/with_imputation/merge.py
 log/prediction/PRE/XGBoost/without_imputation/merge.py
+.history
