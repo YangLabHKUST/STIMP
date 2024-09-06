@@ -91,7 +91,7 @@ class PRE8dDataset(Dataset):
         return self.datas[index], self.data_ob_masks[index], self.data_gt_masks[index], self.labels[index], self.label_ob_masks[index]
 
     def load_data(self):
-        chla = np.load(self.data_root+"/chla.npy")
+        chla = np.load(self.data_root+"chla.npy")
         chla = chla[:,np.newaxis]
         chla_mask = ~np.isnan(chla)
         self.chla_scaler = LogScaler()
