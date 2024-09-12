@@ -16,6 +16,8 @@ from model.cross_models.cross_former import Crossformer
 from torchtsmixer import TSMixer
 from model.mtgnn import MTGNN
 from model.graphtransformer import GraphTransformer
+from model.graphtransformer_wotemporal import GraphTransformer_wt
+from model.graphtransformer_wospatial import GraphTransformer_ws
 import numpy as np
 from utils import AverageMeter
 
@@ -73,9 +75,13 @@ high_bound = torch.from_numpy(train_dataset.max).float().to(device)
 mean = torch.from_numpy(train_dataset.mean).float().to(device)
 std = torch.from_numpy(train_dataset.std).float().to(device)
    
-assert config.method in ["GraphTransformer", "MTGNN"], print("{} not implement".format(config.method))
+assert config.method in ["GraphTransformer", "GraphTransformer_ws", "GraphTransformer_wt", "MTGNN"], print("{} not implement".format(config.method))
 if config.method == "GraphTransformer":
     model = GraphTransformer(config, adj, is_sea, mean, std)
+elif config.method == "GraphTransformer_ws":
+    model = GraphTransformer_ws(config, adj, is_sea, mean, std)
+elif config.method == "GraphTransformer_wt":
+    model = GraphTransformer_wt(config, adj, is_sea, mean, std)
 elif config.method == "MTGNN":
     model = MTGNN(adj=adj, gcn_true=True, build_adj=False, kernel_set=[7,7], kernel_size=7, gcn_depth=1, num_nodes=adj.shape[0], dropout=0.3, subgraph_size=20, node_dim=8,dilation_exponential=2, conv_channels=2, residual_channels=2, skip_channels=4, end_channels=8, seq_length=config.in_len, in_dim=1, out_dim=config.out_len, layers=2, propalpha=0.5, tanhalpha=3, layer_norm_affline=False)
 
