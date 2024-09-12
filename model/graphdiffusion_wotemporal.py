@@ -157,18 +157,17 @@ class SpatialTemporalEncoding(nn.Module):
 
         #temporal encoding
         x = rearrange(input, 'b t k c n->(b k n) t c')
-        x = self.time_encoding(x)
+        # x = self.time_encoding(x)
         x = rearrange(x, '(b k n) t c->(b k t) n c', b=B, n=N, k=K)
 
         #spatial encoding
-        # x_in = x
-        # position_embedding = self.get_position_embedding_()
-        # x = self.spatial_encoding(x, adj, position_embedding)
+        x_in = x
+        position_embedding = self.get_position_embedding_()
+        x = self.spatial_encoding(x, adj, position_embedding)
         x = rearrange(x, '(b k t) n c-> (b t k) c n', b=B, k=K, t=T)
-        # x_in = rearrange(x_in, '(b k t) n c-> (b t k) c n', b=B, k=K, t=T)
-        # x = x + x_in
+        x_in = rearrange(x_in, '(b k t) n c-> (b t k) c n', b=B, k=K, t=T)
+        x = x + x_in
         x = self.gn(x)
-
 
         x = self.mid_projection(x)
         gate, filter = torch.chunk(x, 2, dim=1)
