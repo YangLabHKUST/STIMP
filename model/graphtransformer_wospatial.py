@@ -132,7 +132,7 @@ class GraphTransformer_ws(nn.Module):
 
         # enc_out = self.spatial_encoder(enc_out, self.adj, position_embedding.transpose(0,1))
         # enc_out = self.gn(enc_out.transpose(1,2))
-        enc_out = rearrange(enc_out, '(b l) d n -> (b n) l d', b=B, l=L)
+        enc_out = rearrange(enc_out, '(b l) n d -> (b n) l d', b=B, l=L)
 
         out = self.projection2(enc_out)
         out = F.silu(out)
