@@ -102,8 +102,6 @@ for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in en
     lon = torch.arange(datas.shape[-1]).unsqueeze(0).unsqueeze(-1).expand(datas.shape[-2], -1, datas.shape[1]).reshape(-1)
     x = np.stack([lati.numpy(), lon.numpy(), time.numpy()], axis=1)
     model.fit(x, tmp_data)
-    if train_step==20:
-        break
  
 chla_mae_list, chla_mse_list = [], []
 for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
