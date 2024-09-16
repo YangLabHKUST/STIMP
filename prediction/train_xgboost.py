@@ -76,6 +76,7 @@ train_labels = []
 for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader):
     datas = datas - mean
     labels = labels - mean
+    stdev = torch.sqrt(torch.var(datas, dim=1, keepdim=True, unbiased=False) + 1e-5)
 
     datas = torch.permute(datas, (0, 3, 1, 2)).numpy()
     labels = torch.permute(labels, (0, 3, 1, 2)).numpy()
