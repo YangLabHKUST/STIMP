@@ -13,7 +13,7 @@ sys.path.append(file_dir)
 
 class DINEOF(BaseEstimator):
     def __init__(self, R, tensor_shape, mask=None,
-                 nitemax=300, toliter=1e-3, tol=1e-8, to_center=True, 
+                 nitemax=300, toliter=1e-5, tol=1e-8, to_center=True, 
                  keep_non_negative_only=True,
                  with_energy=False,
                  early_stopping=True):
@@ -69,10 +69,9 @@ class DINEOF(BaseEstimator):
         mat[nan_mask] = 0
         # Outside of an investigated area everything is considered to be zero
 
-        pbar = trange(self.nitemax, desc='Reconstruction')
         conv_error = 0
         energy_per_iter = []
-        for i in pbar:
+        for i in range(self.nitemax):
             u, s, vt = svds(mat, k=self.K, tol=self.tol)
 
             # Save energy characteristics for this iteration

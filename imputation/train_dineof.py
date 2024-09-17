@@ -91,17 +91,17 @@ best_mae_chla = 100
 model = DINEOF(10, [config.height, config.width, config.in_len])
 
 train_dloader_pbar = tqdm(train_dloader)
-for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader_pbar):
+# for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader_pbar):
 
-    tmp_data = torch.where(data_gt_masks.cpu()==0, float("nan"), datas.cpu())
-    tmp_data = torch.where(data_ob_masks.cpu()==0, float("nan"), tmp_data)
-    tmp_data = rearrange(tmp_data, "b t c h w -> (b h w c t)")
-    tmp_data = tmp_data.cpu().numpy()
-    time = torch.arange(datas.shape[1]).unsqueeze(0).unsqueeze(0).expand(datas.shape[-2], datas.shape[-1], -1).reshape(-1)
-    lati = torch.arange(datas.shape[-2]).unsqueeze(-1).unsqueeze(-1).expand(-1, datas.shape[-1], datas.shape[1]).reshape(-1)
-    lon = torch.arange(datas.shape[-1]).unsqueeze(0).unsqueeze(-1).expand(datas.shape[-2], -1, datas.shape[1]).reshape(-1)
-    x = np.stack([lati.numpy(), lon.numpy(), time.numpy()], axis=1)
-    model.fit(x, tmp_data)
+#     tmp_data = torch.where(data_gt_masks.cpu()==0, float("nan"), datas.cpu())
+#     tmp_data = torch.where(data_ob_masks.cpu()==0, float("nan"), tmp_data)
+#     tmp_data = rearrange(tmp_data, "b t c h w -> (b h w c t)")
+#     tmp_data = tmp_data.cpu().numpy()
+#     time = torch.arange(datas.shape[1]).unsqueeze(0).unsqueeze(0).expand(datas.shape[-2], datas.shape[-1], -1).reshape(-1)
+#     lati = torch.arange(datas.shape[-2]).unsqueeze(-1).unsqueeze(-1).expand(-1, datas.shape[-1], datas.shape[1]).reshape(-1)
+#     lon = torch.arange(datas.shape[-1]).unsqueeze(0).unsqueeze(-1).expand(datas.shape[-2], -1, datas.shape[1]).reshape(-1)
+#     x = np.stack([lati.numpy(), lon.numpy(), time.numpy()], axis=1)
+#     model.fit(x, tmp_data)
  
 chla_mae_list, chla_mse_list = [], []
 for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
@@ -113,6 +113,7 @@ for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enu
     lati = torch.arange(datas.shape[-2]).unsqueeze(-1).unsqueeze(-1).expand(-1, datas.shape[-1], datas.shape[1]).reshape(-1)
     lon = torch.arange(datas.shape[-1]).unsqueeze(0).unsqueeze(-1).expand(datas.shape[-2], -1, datas.shape[1]).reshape(-1)
     x = np.stack([lati.numpy(), lon.numpy(), time.numpy()], axis=1)
+    model.fit(x, tmp_data)
 
     imputed_data = model.predict(x)
     imputed_data = rearrange(imputed_data, "(b t c h w)->b t c h w", b=1, t=datas.shape[1], c=1, h=datas.shape[-2], w=datas.shape[-1])
