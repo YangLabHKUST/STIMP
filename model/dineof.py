@@ -90,7 +90,7 @@ class DINEOF(BaseEstimator):
             grad_conv_error = abs(new_conv_error - conv_error)
             conv_error = new_conv_error
             
-            logger.info(f'Error/Relative Error at iteraion {i}: {conv_error}, {grad_conv_error}')
+            # logger.info(f'Error/Relative Error at iteraion {i}: {conv_error}, {grad_conv_error}')
             
             if self.early_stopping:
                 break_condition = (conv_error <= self.toliter) or (grad_conv_error < self.toliter)
@@ -101,6 +101,7 @@ class DINEOF(BaseEstimator):
                 break
 
         energy_per_iter = np.array(energy_per_iter)
+        logger.info(f'Error/Relative Error at iteraion {i}: {conv_error}, {grad_conv_error}')
 
         if self.to_center:
             mat = decenter_mat(mat, *means)
