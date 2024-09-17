@@ -90,7 +90,7 @@ best_mae_chla = 100
 
 model = DINEOF(10, [config.height, config.width, config.in_len])
 
-train_dloader_pbar = tqdm(train_dloader)
+test_dloader_pbar = tqdm(test_dloader)
 # for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader_pbar):
 
 #     tmp_data = torch.where(data_gt_masks.cpu()==0, float("nan"), datas.cpu())
@@ -104,7 +104,7 @@ train_dloader_pbar = tqdm(train_dloader)
 #     model.fit(x, tmp_data)
  
 chla_mae_list, chla_mse_list = [], []
-for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
+for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader_pbar):
     tmp_data = torch.where(data_gt_masks.cpu()==0, float("nan"), datas.cpu())
     tmp_data = torch.where(data_ob_masks.cpu()==0, float("nan"), tmp_data)
     tmp_data = rearrange(tmp_data, "b t c h w -> (b h w c t)")
