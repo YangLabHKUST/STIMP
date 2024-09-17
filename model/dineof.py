@@ -85,7 +85,7 @@ class DINEOF(BaseEstimator):
             new_conv_error = np.sqrt(np.mean(np.power(mat_hat[nan_mask] - mat[nan_mask], 2))) / mat[non_nan_mask].std()
             mat = mat_hat
 
-            pbar.set_postfix(error=new_conv_error, rel_error=abs(new_conv_error - conv_error))
+            # pbar.set_postfix(error=new_conv_error, rel_error=abs(new_conv_error - conv_error))
             
             grad_conv_error = abs(new_conv_error - conv_error)
             conv_error = new_conv_error
