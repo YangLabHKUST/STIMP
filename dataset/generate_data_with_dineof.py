@@ -12,6 +12,7 @@ from timm.utils import AverageMeter
 from timm.scheduler.cosine_lr import CosineLRScheduler
 import numpy as np
 import sys
+from einops import rearrange
 
 sys.path.insert(0, os.getcwd())
 from dataset.dataset_imputation import PRE8dDataset
