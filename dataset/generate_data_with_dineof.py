@@ -71,10 +71,6 @@ timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
 # print(config)
 # logging.info(config)
 
-model = torch.load(base_dir+'best_0.1.pt')
-model = model.to(device)
-print(model)
-logging.info(model)
 datapath = "/home/mafzhang/data/{}/8d/missing_0.1_in_46_out_46_1.pk".format(config.area)
 if os.path.isfile(datapath) is False:
     print("file does not exist")
