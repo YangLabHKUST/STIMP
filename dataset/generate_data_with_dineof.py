@@ -17,6 +17,7 @@ sys.path.insert(0, os.getcwd())
 from dataset.dataset_imputation import PRE8dDataset
 from utils import check_dir, masked_mae, masked_mse, seed_everything
 from model.dineof import DINEOF
+import pickle
 
 parser = argparse.ArgumentParser(description='Imputation')
 
