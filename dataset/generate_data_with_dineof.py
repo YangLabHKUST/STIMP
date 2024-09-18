@@ -81,8 +81,8 @@ with open(datapath,'rb') as f:
                     f
                 )
 
-adj = np.load("/home/mafzhang/data/MEXICO/8d/adj.npy")
-is_sea = np.load("/home/mafzhang/data/MEXICO/8d/is_sea.npy").astype(bool)
+adj = np.load("/home/mafzhang/data/{}/8d/adj.npy".format(config.area))
+is_sea = np.load("/home/mafzhang/data/{}/8d/is_sea.npy".format(config.area)).astype(bool)
 adj = torch.from_numpy(adj).float().to(device)
 model = DINEOF(10, [config.height, config.width, config.in_len])
 
