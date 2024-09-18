@@ -10,19 +10,13 @@ import time
 from tqdm import tqdm
 from timm.utils import AverageMeter
 from timm.scheduler.cosine_lr import CosineLRScheduler
-from einops import repeat, rearrange
 import numpy as np
-
 import sys
 
 sys.path.insert(0, os.getcwd())
-from dataset.dataset_imputation_as_image import PRE8dDataset
-from utils import check_dir, masked_mae, masked_mse, masked_cor
-from model.dineof import DINEOF
-from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer
+from dataset.dataset_imputation import PRE8dDataset
 from utils import check_dir, masked_mae, masked_mse, seed_everything
-
+from model.dineof import DINEOF
 
 parser = argparse.ArgumentParser(description='Imputation')
 
@@ -31,13 +25,13 @@ parser.add_argument('--area', type=str, default='MEXICO', help='which bay area w
 
 # basic args
 parser.add_argument('--epochs', type=int, default=500, help='epochs')
-parser.add_argument('--batch_size', type=int, default=1, help='batch size')
+parser.add_argument('--batch_size', type=int, default=8, help='batch size')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--wd', type=float, default=1e-4, help='weight decay')
 parser.add_argument('--test_freq', type=int, default=500, help='test per n epochs')
-parser.add_argument('--embedding_size', type=int, default=32)
-parser.add_argument('--hidden_channels', type=int, default=32)
-parser.add_argument('--diffusion_embedding_size', type=int, default=32)
+parser.add_argument('--embedding_size', type=int, default=64)
+parser.add_argument('--hidden_channels', type=int, default=64)
+parser.add_argument('--diffusion_embedding_size', type=int, default=64)
 parser.add_argument('--side_channels', type=int, default=1)
 
 # args for tasks
@@ -68,45 +62,42 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/DINEOF/".format(config.area)
+base_dir = "./log/imputation/{}/GraphDiffusion/".format(config.area)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)
 timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-logging.basicConfig(level=logging.INFO, filename=os.path.join(base_dir, '{}_missing_{}.log'.format(timestamp, config.missing_ratio)), filemode='a', format='%(asctime)s - %(message)s')
-print(config)
-logging.info(config)
+# logging.basicConfig(level=logging.INFO, filename=os.path.join(base_dir, '{}_missing_{}.log'.format(timestamp, config.missing_ratio)), filemode='a', format='%(asctime)s - %(message)s')
+# print(config)
+# logging.info(config)
 
-train_dataset = PRE8dDataset(config)
-train_dloader = DataLoader(train_dataset, config.batch_size, shuffle=True, prefetch_factor=2, num_workers=2)
-test_dloader = DataLoader(PRE8dDataset(config, mode='test'), 1, shuffle=False)
-adj = np.load("/home/mafzhang/data/{}/8d/adj.npy".format(config.area))
+model = torch.load(base_dir+'best_0.1.pt')
+model = model.to(device)
+print(model)
+logging.info(model)
+datapath = "/home/mafzhang/data/{}/8d/missing_0.1_in_46_out_46_1.pk".format(config.area)
+if os.path.isfile(datapath) is False:
+    print("file does not exist")
+    exit()
+with open(datapath,'rb') as f:
+    datas, data_ob_masks, data_gt_masks, labels, label_ob_masks = pickle.load(
+                    f
+                )
+
+adj = np.load("/home/mafzhang/data/MEXICO/8d/adj.npy")
+is_sea = np.load("/home/mafzhang/data/MEXICO/8d/is_sea.npy").astype(bool)
 adj = torch.from_numpy(adj).float().to(device)
-low_bound = torch.from_numpy(train_dataset.min).float().to(device)
-high_bound = torch.from_numpy(train_dataset.max).float().to(device)
-
-best_mae_sst = 100
-best_mae_chla = 100
-
 model = DINEOF(10, [config.height, config.width, config.in_len])
 
-test_dloader_pbar = tqdm(test_dloader)
-# for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader_pbar):
+bs = 1
+step = datas.shape[0]//bs + 1
+num_samples = 10
 
-#     tmp_data = torch.where(data_gt_masks.cpu()==0, float("nan"), datas.cpu())
-#     tmp_data = torch.where(data_ob_masks.cpu()==0, float("nan"), tmp_data)
-#     tmp_data = rearrange(tmp_data, "b t c h w -> (b h w c t)")
-#     tmp_data = tmp_data.cpu().numpy()
-#     time = torch.arange(datas.shape[1]).unsqueeze(0).unsqueeze(0).expand(datas.shape[-2], datas.shape[-1], -1).reshape(-1)
-#     lati = torch.arange(datas.shape[-2]).unsqueeze(-1).unsqueeze(-1).expand(-1, datas.shape[-1], datas.shape[1]).reshape(-1)
-#     lon = torch.arange(datas.shape[-1]).unsqueeze(0).unsqueeze(-1).expand(datas.shape[-2], -1, datas.shape[1]).reshape(-1)
-#     x = np.stack([lati.numpy(), lon.numpy(), time.numpy()], axis=1)
-#     model.fit(x, tmp_data)
- 
-chla_mae_list, chla_mse_list = [], []
-for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader_pbar):
-    tmp_data = torch.where(data_gt_masks.cpu()==0, float("nan"), datas.cpu())
-    tmp_data = torch.where(data_ob_masks.cpu()==0, float("nan"), tmp_data)
+imputed_datas=[]
+for i in tqdm(range(step)):
+    data = torch.from_numpy(datas[bs*i:min(bs*i+bs, datas.shape[0])])
+    data_mask = torch.from_numpy(data_ob_masks[bs*i:min(bs*i+bs, datas.shape[0])])
+    tmp_data = torch.where(data_mask.cpu()==0, float("nan"), data)
     tmp_data = rearrange(tmp_data, "b t c h w -> (b h w c t)")
     tmp_data = tmp_data.cpu().numpy()
     time = torch.arange(datas.shape[1]).unsqueeze(0).unsqueeze(0).expand(datas.shape[-2], datas.shape[-1], -1).reshape(-1)
@@ -118,18 +109,10 @@ for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enu
     imputed_data = model.predict(x)
     imputed_data = rearrange(imputed_data, "(b t c h w)->b t c h w", b=1, t=datas.shape[1], c=1, h=datas.shape[-2], w=datas.shape[-1])
 
-    mask = (data_ob_masks - data_gt_masks).cpu()
-    chla_mae= masked_mae(imputed_data[:,:,0], datas[:,:,0].cpu(), mask[:,:,0])
-    chla_mse= masked_mse(imputed_data[:,:,0], datas[:,:,0].cpu(), mask[:,:,0])
-    chla_mae_list.append(chla_mae)
-    chla_mse_list.append(chla_mse)
+    imputed_data = data.cpu().numpy()*data_mask.cpu().numpy() + (1-data_mask.cpu().numpy())*imputed_data
+    imputed_datas.append(imputed_data)
 
-chla_mae = torch.stack(chla_mae_list, 0)
-chla_mse = torch.stack(chla_mse_list, 0)
-chla_mae = chla_mae[chla_mae!=0].mean()
-chla_mse = chla_mse[chla_mse!=0].mean()
-
-log_buffer = "test mae: chla-{:.4f}, ".format(chla_mae)
-log_buffer += "test mse: chla-{:.4f}".format(chla_mse)
-print(log_buffer)
-logging.info(log_buffer)
+imputed_datas_graph = np.concatenate(imputed_datas,axis==0)
+new_data_path="/home/mafzhang/data/{}/8d/missing_0.1_in_46_out_46_1_imputed_dineof.pk".format(config.area)
+with open(new_data_path, 'wb') as f:
+    pickle.dump([imputed_datas.numpy(), data_ob_masks,data_gt_masks,labels,label_ob_masks], f)
