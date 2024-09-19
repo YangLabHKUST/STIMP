@@ -110,7 +110,7 @@ for i in tqdm(range(step)):
     imputed_data = data.cpu().numpy()*data_mask.cpu().numpy() + (1-data_mask.cpu().numpy())*imputed_data
     imputed_datas.append(imputed_data)
 
-imputed_datas_graph = np.concatenate(imputed_datas,axis==0)
+imputed_datas_graph = np.concatenate(imputed_datas,axis=0)
 new_data_path="/home/mafzhang/data/{}/8d/missing_0.1_in_46_out_46_1_imputed_dineof.pk".format(config.area)
 with open(new_data_path, 'wb') as f:
     pickle.dump([imputed_datas.numpy(), data_ob_masks,data_gt_masks,labels,label_ob_masks], f)
