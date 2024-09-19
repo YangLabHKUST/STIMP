@@ -92,11 +92,11 @@ step = datas.shape[0]//bs + 1
 num_samples = 10
 
 imputed_datas=[]
-for i in tqdm(range(step)):
-    data = torch.from_numpy(datas[bs*i:min(bs*i+bs, datas.shape[0])])
-    data_mask = torch.from_numpy(data_ob_masks[bs*i:min(bs*i+bs, datas.shape[0])])
+for i in tqdm(range(datas.shape[0])):
+    data = torch.from_numpy(datas[i])
+    data_mask = torch.from_numpy(data_ob_masks[i])
     tmp_data = torch.where(data_mask.cpu()==0, float("nan"), data)
-    tmp_data = rearrange(tmp_data, "b t c h w -> (b h w c t)")
+    tmp_data = rearrange(tmp_data, "t c h w -> (h w c t)")
     tmp_data = tmp_data.cpu().numpy()
     time = torch.arange(datas.shape[1]).unsqueeze(0).unsqueeze(0).expand(datas.shape[-2], datas.shape[-1], -1).reshape(-1)
     lati = torch.arange(datas.shape[-2]).unsqueeze(-1).unsqueeze(-1).expand(-1, datas.shape[-1], datas.shape[1]).reshape(-1)
@@ -113,4 +113,4 @@ for i in tqdm(range(step)):
 imputed_datas_graph = np.concatenate(imputed_datas,axis=0)
 new_data_path="/home/mafzhang/data/{}/8d/missing_0.1_in_46_out_46_1_imputed_dineof.pk".format(config.area)
 with open(new_data_path, 'wb') as f:
-    pickle.dump([imputed_datas.numpy(), data_ob_masks,data_gt_masks,labels,label_ob_masks], f)
+    pickle.dump([imputed_datas_graph, data_ob_masks,data_gt_masks,labels,label_ob_masks], f)
