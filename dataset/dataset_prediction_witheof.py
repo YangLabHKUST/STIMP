@@ -41,8 +41,8 @@ class PRE8dDataset(Dataset):
                 self.datas, self.data_ob_masks, self.data_gt_masks, self.labels, self.label_ob_masks = pickle.load(
                     f
                 )
-        self.datas = self.datas[:,:,:,:,self.area.astype(bool)]
-        self.data_ob_masks = self.data_ob_masks[:,:,:, self.area.astype(bool)]
+        self.datas = self.datas[:,:,:,self.area.astype(bool)]
+        self.data_ob_masks = self.data_ob_masks[:,:,:,self.area.astype(bool)]
         self.data_gt_masks = self.data_gt_masks[:,:,:,self.area.astype(bool)]
         self.labels = self.labels[:,:,:, self.area.astype(bool)]
         self.label_ob_masks = self.label_ob_masks[:,:,:,self.area.astype(bool)]
