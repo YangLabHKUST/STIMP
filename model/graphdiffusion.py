@@ -104,6 +104,39 @@ class IAP_base(nn.Module):
 
                 imputed_samples[:, i] = current_sample.detach().cpu()
         return imputed_samples
+    
+    def impute_with_process(self, observed_data, observed_mask, adj, n_samples):
+        B, T, K, N = observed_data.shape
+        imputed_samples = torch.zeros(B, self.num_steps, n_samples, T, K, N)
+        mean = (observed_data*observed_mask).sum(1, keepdim=True)/(observed_mask.sum(1, keepdim=True)+1e-5)
+        mean_ = mean.expand_as(observed_data)
+
+        with torch.no_grad():
+            for i in range(n_samples):
+                # generate noisy observation for unconditional model
+                current_sample = torch.randn_like(observed_data).to(self.device) + mean_
+                observed_data_imputed = torch.where(observed_mask.bool(), observed_data, mean.expand_as(observed_data))
+
+                for t in range(self.num_steps - 1, -1, -1):
+                    noisy_target =  current_sample 
+                    total_input = torch.stack([observed_data_imputed,(1-observed_mask)*noisy_target],dim=3)
+                    predicted = self.diffusion_model(total_input, observed_mask, adj, (torch.ones(B) * t).long().to(self.device))
+                    low_bound = self.low_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(predicted)
+                    high_bound = self.high_bound.unsqueeze(0).unsqueeze(0).unsqueeze(0).expand_as(predicted)
+                    # predicted = torch.clamp(predicted, low_bound, high_bound)
+
+                    coeff1 = (1-self.alpha_prev[t])*(self.alpha_hat[t])**0.5 / (1 - self.alpha[t])
+                    coeff2 = ((1-self.alpha_hat[t])*(self.alpha_prev[t])**0.5) / (1 - self.alpha[t])
+                    current_sample = coeff1 *current_sample + coeff2 * predicted
+                    if t > 0:
+                        noise = torch.randn_like(current_sample)
+                        sigma = (
+                                        (1.0 - self.alpha[t - 1]) / (1.0 - self.alpha[t]) * self.beta[t]
+                                ) ** 0.5
+                        current_sample += sigma * noise
+
+                    imputed_samples[:, t, i] = current_sample.detach().cpu()
+        return imputed_samples
 
 
 def Conv1d_with_init(in_channels, out_channels, kernel_size):
