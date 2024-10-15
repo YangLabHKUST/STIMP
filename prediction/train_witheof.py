@@ -54,7 +54,7 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-flag = "with_imputation"
+flag = "with_imputation_eof"
 base_dir = "./log/prediction/{}/{}/{}/".format(config.area, config.method, flag)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
