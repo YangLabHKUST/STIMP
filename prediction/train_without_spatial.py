@@ -17,7 +17,7 @@ from model.cross_models.cross_former import Crossformer
 from torchtsmixer import TSMixer
 from model.mtgnn import MTGNN
 from model.graphtransformer import GraphTransformer
-from iTransformer import iTransformer
+from model.iTransformer import iTransformer
 import numpy as np
 from utils import AverageMeter
 

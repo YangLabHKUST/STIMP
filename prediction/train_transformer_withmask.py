@@ -55,7 +55,7 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-flag = "without_imputation"
+flag = "with_mask"
 base_dir = "./log/prediction/{}/{}/{}/".format(config.area, config.method, flag)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
@@ -110,7 +110,8 @@ for epoch in train_process:
         datas/= stdev
 
         datas = rearrange(datas, 'b t c n -> (b n) t c')
-        prediction = model(datas)
+        data_ob_masks = rearrange(data_ob_masks, 'b t c n -> (b n) (t c)')
+        prediction = model(datas, 1-data_ob_masks)
         if isinstance(prediction, dict):
             prediction = prediction[config.out_len]
         prediction = rearrange(prediction, '(b n) t c -> b t c n', b=B, n=N)
@@ -146,7 +147,8 @@ for epoch in train_process:
 
                 B, T, C, N = datas.shape
                 datas = rearrange(datas, 'b t c n -> (b n) t c')
-                prediction = model(datas)
+                data_ob_masks = rearrange(data_ob_masks, 'b t c n -> (b n) (t c)')
+                prediction = model(datas, 1-data_ob_masks)
                 if isinstance(prediction, dict):
                     prediction = prediction[config.out_len]
                 prediction = rearrange(prediction, '(b n) t c -> b t c n', b=B, n=N)
