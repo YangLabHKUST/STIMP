@@ -21,3 +21,9 @@ If we want to run STIMP for Chl_a imputation in the Pearl River Estuary, we can 
 ```bash
 bash script/train_stimp_imputation.sh PRE # Chesapeake, MEXICO and Yangtze for the other three costal oceans 
 ```
+### Prediction
+We can make robust prediction of Chl_a across a large scale coastal ocean after imputation.
+
+```bash
+bash script/train_graphtransformer.sh PRE # Chesapeake, MEXICO and Yangtze for the other three costal oceans 
+```
