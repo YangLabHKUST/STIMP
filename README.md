@@ -12,3 +12,12 @@ conda create -n stimp python=3.9
 conda activate stimp
 pip install -r requirements.txt
 ```
+## Pipeline
+See the `script` dir for examples on how to run STIMP and other baselines.
+
+
+```bash
+bash run.py --gene_map YOUR_PATH/gene_map.tif \  # The gene map is a 3D image with shape (height, width, n_genes)
+--nuclei_mask YOUR_PATH/nuclei_mask.tif \      # The nuclei mask is a 2D image with shape (height, width)
+--log_dir ./log/LOG_NAME
+```
