@@ -1,7 +1,8 @@
 # AI-powered spatiotemporal imputation and prediction of chlorophyll-a concentration in coastal oceans
 This repository contains the code for the STIMP method, an advanced AI framework to impute and predict Chl_a across a broad spatiotemporal scale in coastal oceans. STIMP's results can be utilized to diagnose and analyze the ecosystem health of coastal oceans based on the remote sensing measurement.
 
-<img src="https://github.com/user-attachments/assets/4ac99397-11fe-465c-a412-f781f451618c"  width="600" />
+
+<img src="https://github.com/user-attachments/assets/47b87208-e49a-45e0-9c93-8d792546bcac"  width="1000" />
 
 ## Installation
 ```bash
