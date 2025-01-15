@@ -15,9 +15,9 @@ pip install -r requirements.txt
 ## Pipeline
 See the `script` dir for examples on how to run STIMP and other baselines.
 
+### Imputation
+If we want to run STIMP for Chl_a imputation in the Pearl River Estuary, we can run the following script
 
 ```bash
-bash run.py --gene_map YOUR_PATH/gene_map.tif \  # The gene map is a 3D image with shape (height, width, n_genes)
---nuclei_mask YOUR_PATH/nuclei_mask.tif \      # The nuclei mask is a 2D image with shape (height, width)
---log_dir ./log/LOG_NAME
+bash script/train_stimp_imputation.sh PRE
 ```
