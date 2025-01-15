@@ -12,7 +12,7 @@ import sys
 sys.path.insert(0, os.getcwd())
 from dataset.dataset_imputation import PRE8dDataset
 from utils import check_dir, masked_mae, masked_mse, seed_everything
-from model.graphdiffusion_wospatial import IAP_base
+from model.stimp_wospatial import IAP_base
 
 parser = argparse.ArgumentParser(description='Imputation')
 
