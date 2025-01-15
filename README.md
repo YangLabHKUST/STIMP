@@ -19,5 +19,5 @@ See the `script` dir for examples on how to run STIMP and other baselines.
 If we want to run STIMP for Chl_a imputation in the Pearl River Estuary, we can run the following script
 
 ```bash
-bash script/train_stimp_imputation.sh PRE
+bash script/train_stimp_imputation.sh PRE # Chesapeake, MEXICO and Yangtze for the other three costal oceans 
 ```
