@@ -19,8 +19,7 @@ from utils import check_dir, masked_mae, masked_mse, seed_everything
 
 parser = argparse.ArgumentParser(description='Imputation')
 
-# args for area and methods
-parser.add_argument('--area', type=str, default='MEXICO', help='which bay area we focus')
+
 
 # basic args
 parser.add_argument('--epochs', type=int, default=500, help='epochs')
@@ -32,6 +31,7 @@ parser.add_argument('--embedding_size', type=int, default=64)
 parser.add_argument('--hidden_channels', type=int, default=64)
 parser.add_argument('--diffusion_embedding_size', type=int, default=64)
 parser.add_argument('--side_channels', type=int, default=1)
+parser.add_argument('--data_path', type=str, default="/home/mafzhang/data/{}/8d/")
 
 # args for tasks
 parser.add_argument('--in_len', type=int, default=46)
@@ -74,7 +74,7 @@ model = torch.load(base_dir+'best_0.1.pt')
 model = model.to(device)
 print(model)
 logging.info(model)
-datapath = "/home/mafzhang/data/{}/8d/missing_0.1_in_46_out_46_1.pk".format(config.area)
+datapath = "{}/missing_{}_in_{}_out_{}_1_imputed_graph.pk".format(config.data_path, config.missing_ratio, config.in_len, config.out_len)
 if os.path.isfile(datapath) is False:
     print("file does not exist")
     exit()
@@ -83,8 +83,8 @@ with open(datapath,'rb') as f:
                     f
                 )
 
-adj = np.load("/home/mafzhang/data/MEXICO/8d/adj.npy")
-is_sea = np.load("/home/mafzhang/data/MEXICO/8d/is_sea.npy").astype(bool)
+adj = np.load("{}/adj.npy".format(config.data_path))
+is_sea = np.load("{}/is_sea.npy".format(config.data_path)).astype(bool)
 adj = torch.from_numpy(adj).float().to(device)
 
 
@@ -110,6 +110,6 @@ for i in tqdm(range(step)):
 imputed_datas_graph = torch.cat(imputed_datas,dim=0)
 imputed_datas = torch.zeros(imputed_datas_graph.shape[0],10,46,1,is_sea.shape[0],is_sea.shape[1])
 imputed_datas[:,:,:,:,is_sea]=imputed_datas_graph
-new_data_path="/home/mafzhang/data/{}/8d/missing_0.1_in_46_out_46_1_imputed_graph.pk".format(config.area)
-with open(new_data_path, 'wb') as f:
+
+with open(datapath, 'wb') as f:
     pickle.dump([imputed_datas.numpy(), data_ob_masks,data_gt_masks,labels,label_ob_masks], f)
