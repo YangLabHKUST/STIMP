@@ -12,6 +12,7 @@ from timm.utils import AverageMeter
 from timm.scheduler.cosine_lr import CosineLRScheduler
 import numpy as np
 import sys
+import pickle
 
 sys.path.insert(0, os.getcwd())
 from dataset.dataset_imputation import PRE8dDataset
@@ -20,6 +21,7 @@ from utils import check_dir, masked_mae, masked_mse, seed_everything
 parser = argparse.ArgumentParser(description='Imputation')
 
 
+parser.add_argument('--area', type=str, default='PRE', help='which bay area we focus')
 
 # basic args
 parser.add_argument('--epochs', type=int, default=500, help='epochs')
@@ -31,7 +33,7 @@ parser.add_argument('--embedding_size', type=int, default=64)
 parser.add_argument('--hidden_channels', type=int, default=64)
 parser.add_argument('--diffusion_embedding_size', type=int, default=64)
 parser.add_argument('--side_channels', type=int, default=1)
-parser.add_argument('--data_path', type=str, default="/home/mafzhang/data/{}/8d/")
+parser.add_argument('--data_path', type=str, default="/data/")
 
 # args for tasks
 parser.add_argument('--in_len', type=int, default=46)
@@ -71,7 +73,7 @@ model = torch.load(base_dir+'best_0.1.pt')
 model = model.to(device)
 print(model)
 logging.info(model)
-datapath = "{}/missing_{}_in_{}_out_{}.pk".format(config.data_path, config.missing_ratio, config.in_len, config.out_len)
+datapath = "data/{}/missing_{}_in_{}_out_{}.pk".format(config.area, config.missing_ratio, config.in_len, config.out_len)
 if os.path.isfile(datapath) is False:
     print("file does not exist")
     exit()
@@ -80,8 +82,8 @@ with open(datapath,'rb') as f:
                     f
                 )
 
-adj = np.load("{}/adj.npy".format(config.data_path))
-is_sea = np.load("{}/is_sea.npy".format(config.data_path)).astype(bool)
+adj = np.load("data/{}/adj.npy".format(config.area))
+is_sea = np.load("data/{}/is_sea.npy".format(config.area)).astype(bool)
 adj = torch.from_numpy(adj).float().to(device)
 
 
@@ -98,7 +100,7 @@ for i in tqdm(range(step)):
     data_graph = torch.from_numpy(data[:,:,:,is_sea]).float().to(device)
     data_mask_graph = torch.from_numpy(data_mask[:,:,:,is_sea]).to(device)
 
-    imputed_data = model.impute(data_graph, data_mask_graph, adj, node_type, 10)
+    imputed_data = model.impute(data_graph, data_mask_graph, adj, 10)
     data_mask_graph = data_mask_graph.unsqueeze(1).expand_as(imputed_data)
     data_graph = data_graph.unsqueeze(1).expand_as(imputed_data)
     imputed_data = data_mask_graph.cpu()*data_graph.cpu() + (1-data_mask_graph.cpu())*imputed_data

@@ -58,7 +58,7 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/GraphDiffusion/".format(config.area)
+base_dir = "./log/imputation/{}/STIMP/".format(config.area)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)
@@ -70,7 +70,7 @@ logging.info(config)
 train_dataset = PRE8dDataset(config)
 train_dloader = DataLoader(train_dataset, config.batch_size, shuffle=True, prefetch_factor=2, num_workers=2)
 test_dloader = DataLoader(PRE8dDataset(config, mode='test'), config.batch_size, shuffle=False)
-adj = np.load("/home/mafzhang/data/{}/8d/adj.npy".format(config.area))
+adj = np.load("data/{}/adj.npy".format(config.area))
 adj = torch.from_numpy(adj).float().to(device)
 low_bound = torch.from_numpy(train_dataset.min).float().to(device)
 high_bound = torch.from_numpy(train_dataset.max).float().to(device)

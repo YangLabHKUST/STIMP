@@ -23,7 +23,7 @@ import pickle
 parser = argparse.ArgumentParser(description='Imputation')
 
 # args for area and methods
-parser.add_argument('--area', type=str, default='MEXICO', help='which bay area we focus')
+parser.add_argument('--area', type=str, default='PRE', help='which bay area we focus')
 
 # basic args
 parser.add_argument('--epochs', type=int, default=500, help='epochs')
@@ -73,8 +73,9 @@ timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
 # print(config)
 # logging.info(config)
 
-datapath = "../data/{}/missing_0.1_in_{}_out_{}.pk".format(config.in_len, config.out_len, config.area)
+datapath = "data/{}/missing_0.1_in_{}_out_{}.pk".format(config.area, config.in_len, config.out_len)
 if os.path.isfile(datapath) is False:
+    print(datapath)
     print("file does not exist")
     exit()
 with open(datapath,'rb') as f:
@@ -82,8 +83,8 @@ with open(datapath,'rb') as f:
                     f
                 )
 
-adj = np.load("../data/{}/adj.npy".format(config.area))
-is_sea = np.load("../data/{}/is_sea.npy".format(config.area)).astype(bool)
+adj = np.load("data/{}/adj.npy".format(config.area))
+is_sea = np.load("data/{}/is_sea.npy".format(config.area)).astype(bool)
 adj = torch.from_numpy(adj).float().to(device)
 model = DINEOF(10, [config.height, config.width, config.in_len])
 
@@ -111,6 +112,6 @@ for i in tqdm(range(datas.shape[0])):
     imputed_datas.append(imputed_data)
 
 imputed_datas_graph = np.concatenate(imputed_datas,axis=0)
-new_data_path="../data/{}/missing_0.1_in_{}_out_{}_imputed_dineof.pk".format(config.in_len, config.out_len, config.area)
+new_data_path="../data/{}/missing_0.1_in_{}_out_{}_imputed_dineof.pk".format(config.area, config.in_len, config.out_len)
 with open(new_data_path, 'wb') as f:
     pickle.dump([imputed_datas_graph, data_ob_masks,data_gt_masks,labels,label_ob_masks], f)
