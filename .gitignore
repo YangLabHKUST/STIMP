@@ -10,3 +10,4 @@ log/prediction/PRE/XGBoost/without_imputation/merge.py
 .history
 *.html
 log
+data
