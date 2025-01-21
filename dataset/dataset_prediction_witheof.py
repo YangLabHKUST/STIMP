@@ -14,12 +14,12 @@ warnings.filterwarnings("ignore")
 class PRE8dDataset(Dataset):
     def __init__(self, config, mode="train"):
         super().__init__()
-        self.data_root="/home/mafzhang/data/{}/8d/".format(config.area)
+        self.data_root="../data/{}/".format(config.area)
         self.in_len = config.in_len
         self.out_len = config.out_len
 
         self.datapath = (
-            self.data_root + "/missing_" + str(config.missing_ratio) + "_in_" + str(config.in_len) + "_out_" + str(config.out_len) + "_1_imputed_dineof.pk"
+            self.data_root + "/missing_" + str(config.missing_ratio) + "_in_" + str(config.in_len) + "_out_" + str(config.out_len) + "_imputed_dineof.pk"
         )
         self.mode = mode
         self.adj = np.load(self.data_root+"adj.npy")
@@ -48,7 +48,6 @@ class PRE8dDataset(Dataset):
         self.label_ob_masks = self.label_ob_masks[:,:,:,self.area.astype(bool)]
 
         bound = 648 - self.in_len - self.out_len
-        # self.datas = self.datas[:,config.index]
 
         if mode == "train":
             self.datas, self.data_ob_masks, self.data_gt_masks, self.labels, self.label_ob_masks = self.datas[:bound], self.data_ob_masks[:bound], self.data_gt_masks[:bound], self.labels[:bound], self.label_ob_masks[:bound]

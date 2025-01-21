@@ -61,20 +61,17 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/GraphDiffusion/".format(config.area)
+base_dir = "./log/imputation/{}/STIMP/".format(config.area)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)
 timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-# logging.basicConfig(level=logging.INFO, filename=os.path.join(base_dir, '{}_missing_{}.log'.format(timestamp, config.missing_ratio)), filemode='a', format='%(asctime)s - %(message)s')
-# print(config)
-# logging.info(config)
 
 model = torch.load(base_dir+'best_0.1.pt')
 model = model.to(device)
 print(model)
 logging.info(model)
-datapath = "{}/missing_{}_in_{}_out_{}_1_imputed_graph.pk".format(config.data_path, config.missing_ratio, config.in_len, config.out_len)
+datapath = "{}/missing_{}_in_{}_out_{}.pk".format(config.data_path, config.missing_ratio, config.in_len, config.out_len)
 if os.path.isfile(datapath) is False:
     print("file does not exist")
     exit()
@@ -108,7 +105,7 @@ for i in tqdm(range(step)):
     imputed_datas.append(imputed_data)
 
 imputed_datas_graph = torch.cat(imputed_datas,dim=0)
-imputed_datas = torch.zeros(imputed_datas_graph.shape[0],10,46,1,is_sea.shape[0],is_sea.shape[1])
+imputed_datas = torch.zeros(imputed_datas_graph.shape[0],num_samples, config.in_len,1,is_sea.shape[0],is_sea.shape[1])
 imputed_datas[:,:,:,:,is_sea]=imputed_datas_graph
 
 with open(datapath, 'wb') as f:

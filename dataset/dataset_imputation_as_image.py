@@ -13,12 +13,12 @@ warnings.filterwarnings("ignore")
 class PRE8dDataset(Dataset):
     def __init__(self, config, mode="train"):
         super().__init__()
-        self.data_root="/home/mafzhang/data/{}/8d/".format(config.area)
+        self.data_root="../data/{}/".format(config.area)
         self.in_len = config.in_len
         self.out_len = config.out_len
 
         self.datapath = (
-            self.data_root + "/missing_" + str(config.missing_ratio) + "_in_" + str(config.in_len) + "_out_" + str(config.out_len) + "_1.pk"
+            self.data_root + "/missing_" + str(config.missing_ratio) + "_in_" + str(config.in_len) + "_out_" + str(config.out_len) + ".pk"
         )
         self.mode = mode
         self.adj = np.load(self.data_root+"adj.npy")
@@ -70,11 +70,6 @@ class PRE8dDataset(Dataset):
                     f
                 )
 
-        # self.datas = self.datas[:,:,:,self.area.astype(bool)]
-        # self.data_ob_masks = self.data_ob_masks[:,:,:,self.area.astype(bool)]
-        # self.data_gt_masks = self.data_gt_masks[:,:,:,self.area.astype(bool)]
-        # self.labels = self.labels[:,:,:,self.area.astype(bool)]
-        # self.label_ob_masks = self.label_ob_masks[:,:,:,self.area.astype(bool)]
         bound = 648 - self.in_len - self.out_len
         if mode == "train":
             self.datas, self.data_ob_masks, self.data_gt_masks, self.labels, self.label_ob_masks = self.datas[:bound], self.data_ob_masks[:bound], self.data_gt_masks[:bound], self.labels[:bound], self.label_ob_masks[:bound]
@@ -104,6 +99,7 @@ class LogScaler:
         return np.log10(x)
     def inverse_transform(self, x):
         return 10**x
+
 if __name__ == "__main__":
     dataset = PRE8dDataset(data_root='/home/mafzhang/data/PRE/8d', in_len=12, out_len=1,missing_ratio=0.1, mode='train')
 

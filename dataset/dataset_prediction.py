@@ -14,12 +14,12 @@ warnings.filterwarnings("ignore")
 class PRE8dDataset(Dataset):
     def __init__(self, config, mode="train"):
         super().__init__()
-        self.data_root="/home/mafzhang/data/{}/8d/".format(config.area)
+        self.data_root="../data/{}/".format(config.area)
         self.in_len = config.in_len
         self.out_len = config.out_len
 
         self.datapath = (
-            self.data_root + "/missing_" + str(config.missing_ratio) + "_in_" + str(config.in_len) + "_out_" + str(config.out_len) + "_1_imputed_graph.pk"
+            self.data_root + "/missing_" + str(config.missing_ratio) + "_in_" + str(config.in_len) + "_out_" + str(config.out_len) + "_imputed_stimp.pk"
         )
         self.mode = mode
         self.adj = np.load(self.data_root+"adj.npy")

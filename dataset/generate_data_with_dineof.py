@@ -64,7 +64,7 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/GraphDiffusion/".format(config.area)
+base_dir = "./log/imputation/{}/STIMP/".format(config.area)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)
@@ -73,7 +73,7 @@ timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
 # print(config)
 # logging.info(config)
 
-datapath = "/home/mafzhang/data/{}/8d/missing_0.1_in_46_out_46_1.pk".format(config.area)
+datapath = "../data/{}/missing_0.1_in_{}_out_{}.pk".format(config.in_len, config.out_len, config.area)
 if os.path.isfile(datapath) is False:
     print("file does not exist")
     exit()
@@ -82,8 +82,8 @@ with open(datapath,'rb') as f:
                     f
                 )
 
-adj = np.load("/home/mafzhang/data/{}/8d/adj.npy".format(config.area))
-is_sea = np.load("/home/mafzhang/data/{}/8d/is_sea.npy".format(config.area)).astype(bool)
+adj = np.load("../data/{}/adj.npy".format(config.area))
+is_sea = np.load("../data/{}/is_sea.npy".format(config.area)).astype(bool)
 adj = torch.from_numpy(adj).float().to(device)
 model = DINEOF(10, [config.height, config.width, config.in_len])
 
@@ -111,6 +111,6 @@ for i in tqdm(range(datas.shape[0])):
     imputed_datas.append(imputed_data)
 
 imputed_datas_graph = np.concatenate(imputed_datas,axis=0)
-new_data_path="/home/mafzhang/data/{}/8d/missing_0.1_in_46_out_46_1_imputed_dineof.pk".format(config.area)
+new_data_path="../data/{}/missing_0.1_in_{}_out_{}_imputed_dineof.pk".format(config.in_len, config.out_len, config.area)
 with open(new_data_path, 'wb') as f:
     pickle.dump([imputed_datas_graph, data_ob_masks,data_gt_masks,labels,label_ob_masks], f)
