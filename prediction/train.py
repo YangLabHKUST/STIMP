@@ -67,7 +67,7 @@ logging.info(config)
 train_dataset = PRE8dDataset(config)
 train_dloader = DataLoader(train_dataset, config.batch_size, shuffle=True, prefetch_factor=2, num_workers=2) 
 test_dloader = DataLoader(PRE8dDataset(config, mode='test'), config.batch_size, shuffle=False)
-adj = np.load("/home/mafzhang/data/{}/8d/adj.npy".format(config.area))
+adj = np.load("./data/{}/adj.npy".format(config.area))
 adj = torch.from_numpy(adj).float().to(device)
 is_sea = torch.from_numpy(train_dataset.area).bool().to(device)
 low_bound = torch.from_numpy(train_dataset.min).float().to(device)
@@ -166,3 +166,7 @@ for epoch in train_process:
             torch.save(model, base_dir + "best_model_with_dataset_{}.pt".format(config.method, config.index))
             np.save(base_dir + "prediction_{}.npy".format(str(config.index)), predictions)
             best_mae_chla = chla_mae_mean
+
+if not os.path.exists("./data/{}/trues.npy".format(config.area)):
+    np.save("./data/{}/trues.npy", labels.cpu().detach().numpy())
+    np.save("./data/{}/true_masks.npy", label_masks.cpu().detach().numpy())
