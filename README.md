@@ -7,7 +7,7 @@ This repository contains the code for the STIMP method, an advanced AI framework
 ## Reproducibility
 We provide [source code](https://github.com/Ryanfzhang/STIMP/tree/release/tutorials) for reproducing the experiments of the paper "AI-powered spatiotemporal imputation and prediction of chlorophyll-a concentration in coastal oceans".
 
-## Installation
+### Step1. installation
 ```bash
 git clone https://github.com/YangLabHKUST/STIMP.git
 cd /path/to/STIMP
