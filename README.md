@@ -26,5 +26,10 @@ The resluts presented in our paper are available:
 * [Chesapeake Bay](https://stimp-tutorials.readthedocs.io/en/latest/analysis/Chesapeake/index.html)
 * [Yangtze River Estuary](https://stimp-tutorials.readthedocs.io/en/latest/analysis/Yangtze/index.html)
 
+## Reference
+If you find the ``STIMP`` package or any of the source code in this repository useful for your work, please cite:
 
+   | AI-powered spatiotemporal imputation and prediction of chlorophyll-a concentration in coastal ecosystems.
+   | Fan Zhang, Hiuseut Kung, Fa Zhang, Can Yang and Jianping Gan.
+   | 2025.
 
