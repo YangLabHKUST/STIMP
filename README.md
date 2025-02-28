@@ -15,4 +15,7 @@ conda activate stimp
 pip install -r requirements.txt
 ```
 
+## Four representative coastal ocean area analysis
+The code for reproducing the results presented in our paper are available on the [tutorial website](https://stimp-tutorials.readthedocs.io/)
+
 
