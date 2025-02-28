@@ -17,7 +17,7 @@ pip install -r requirements.txt
 ```
 
 ### Step2. Prepare data
-All data used in this work are publicly available through online sources. The chlorophyll-a observation datasets were 8-day averaged Level 3 mapped products from Moderate Resolution Imaging Spectroradiometer (MODIS) Aqua projects with a spatial resolution of 4 km https://search.earthdata.nasa.gov/search?q=10.5067/AQUA/MODIS/L3M/CHL/2022. You can select the data with ***.8D.*.4km.nc** as filter. 
+All data used in this work are publicly available through online sources. The chlorophyll-a observation datasets were 8-day averaged Level 3 mapped products from Moderate Resolution Imaging Spectroradiometer (MODIS) Aqua projects with a spatial resolution of 4 km https://search.earthdata.nasa.gov/search?q=10.5067/AQUA/MODIS/L3M/CHL/2022. You can select the data with **\*.8D.\*.4km.nc** as filter. 
 
 We also uploaded the datasets on Zenodo at https://doi.org/10.5281/zenodo.14724760. Then, 
 ```bash
