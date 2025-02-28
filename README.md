@@ -16,6 +16,15 @@ pip install -r requirements.txt
 ```
 
 ## Four representative coastal ocean area analysis
-The code for reproducing the results presented in our paper are available on the [tutorial website](https://stimp-tutorials.readthedocs.io/)
+The code for reproducing the results presented in our paper are available on the [This tutorial](https://stimp-tutorials.readthedocs.io/). To reproduce our resluts, it is necessary to first train STIMP and the baselines, which can be found in the tutorials:
+* Train STIMP on each coastal ocean area(https://stimp-tutorials.readthedocs.io/en/latest/usage.html)
+* Train baselines, including imputation methods and prediction methods on each coastal ocean area(https://stimp-tutorials.readthedocs.io/en/latest/baselines.html)
+
+The resluts presented in our paper are available:
+* [Pearl River Estuary](https://stimp-tutorials.readthedocs.io/en/latest/analysis/PRE/index.html)
+* [Northern Gulf of Mexico](https://stimp-tutorials.readthedocs.io/en/latest/analysis/MEXICO/index.html)
+* [Chesapeake Bay](https://stimp-tutorials.readthedocs.io/en/latest/analysis/Chesapeake/index.html)
+* [Yangtze River Estuary](https://stimp-tutorials.readthedocs.io/en/latest/analysis/Yangtze/index.html)
+
 
 
