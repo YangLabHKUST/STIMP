@@ -112,6 +112,6 @@ for i in tqdm(range(datas.shape[0])):
     imputed_datas.append(imputed_data)
 
 imputed_datas_graph = np.concatenate(imputed_datas,axis=0)
-new_data_path="../data/{}/missing_0.1_in_{}_out_{}_imputed_dineof.pk".format(config.area, config.in_len, config.out_len)
+new_data_path="./data/{}/missing_0.1_in_{}_out_{}_imputed_dineof.pk".format(config.area, config.in_len, config.out_len)
 with open(new_data_path, 'wb') as f:
     pickle.dump([imputed_datas_graph, data_ob_masks,data_gt_masks,labels,label_ob_masks], f)

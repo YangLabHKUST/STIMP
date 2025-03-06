@@ -110,5 +110,6 @@ imputed_datas_graph = torch.cat(imputed_datas,dim=0)
 imputed_datas = torch.zeros(imputed_datas_graph.shape[0],num_samples, config.in_len,1,is_sea.shape[0],is_sea.shape[1])
 imputed_datas[:,:,:,:,is_sea]=imputed_datas_graph
 
-with open(datapath, 'wb') as f:
+new_datapath = "data/{}/missing_{}_in_{}_out_{}_imputed_stimp.pk".format(config.area, config.missing_ratio, config.in_len, config.out_len)
+with open(new_datapath, 'wb') as f:
     pickle.dump([imputed_datas.numpy(), data_ob_masks,data_gt_masks,labels,label_ob_masks], f)
