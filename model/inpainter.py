@@ -123,9 +123,9 @@ class SpatialTemporalEncoding(nn.Module):
         self.spatial_encoding = GCN(self.config.in_len, self.config.in_len)
         self.diffusion_embedding = DiffusionEmbedding(num_steps=config.num_steps, embedding_dim=config.diffusion_embedding_size, projection_dim=config.in_len)
 
-        self.is_sea = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/is_sea.npy'.format(config.area))).to(self.device)
-        self.mean = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/mean.npy'.format(config.area))).to(self.device)
-        self.std = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/std.npy'.format(config.area))).to(self.device)
+        self.is_sea = torch.from_numpy(np.load('./data/{}/is_sea.npy'.format(config.area))).to(self.device)
+        self.mean = torch.from_numpy(np.load('./data/{}/mean.npy'.format(config.area))).to(self.device)
+        self.std = torch.from_numpy(np.load('./data/{}/std.npy'.format(config.area))).to(self.device)
         self.is_sea = self.is_sea.bool()
 
         learnable_position_embedding = self.get_position_embeding()[:,self.is_sea]

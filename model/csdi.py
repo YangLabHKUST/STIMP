@@ -155,9 +155,9 @@ class SpatialTemporalEncoding(nn.Module):
         self.time_encoding = LinearAttentionTransformer(dim=self.config.hidden_channels, depth=1, heads=8, max_seq_len=16, n_local_attn_heads=0, local_attn_window_size=0)
         self.diffusion_embedding = DiffusionEmbedding(num_steps=config.num_steps, embedding_dim=config.diffusion_embedding_size, projection_dim=config.hidden_channels)
 
-        self.is_sea = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/is_sea.npy'.format(config.area))).to(self.device)
-        self.mean = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/mean.npy'.format(config.area))).to(self.device)
-        self.std = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/std.npy'.format(config.area))).to(self.device)
+        self.is_sea = torch.from_numpy(np.load('./data/{}/is_sea.npy'.format(config.area))).to(self.device)
+        self.mean = torch.from_numpy(np.load('./data/{}/mean.npy'.format(config.area))).to(self.device)
+        self.std = torch.from_numpy(np.load('./data/{}/std.npy'.format(config.area))).to(self.device)
         self.is_sea = self.is_sea.bool()
 
         learnable_position_embedding = self.get_position_embeding()[:,self.is_sea]

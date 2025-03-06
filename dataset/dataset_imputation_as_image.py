@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 class PRE8dDataset(Dataset):
     def __init__(self, config, mode="train"):
         super().__init__()
-        self.data_root="../data/{}/".format(config.area)
+        self.data_root="./data/{}/".format(config.area)
         self.in_len = config.in_len
         self.out_len = config.out_len
 

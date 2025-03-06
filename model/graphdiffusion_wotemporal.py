@@ -128,9 +128,9 @@ class SpatialTemporalEncoding(nn.Module):
         self.norm1 = nn.LayerNorm(self.config.hidden_channels)
         self.norm2 = nn.LayerNorm(self.config.hidden_channels)
 
-        self.is_sea = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/is_sea.npy'.format(config.area))).to(self.device)
-        self.mean = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/mean.npy'.format(config.area))).to(self.device)
-        self.std = torch.from_numpy(np.load('/home/mafzhang/data/{}/8d/std.npy'.format(config.area))).to(self.device)
+        self.is_sea = torch.from_numpy(np.load('./data/{}/is_sea.npy'.format(config.area))).to(self.device)
+        self.mean = torch.from_numpy(np.load('./data/{}/mean.npy'.format(config.area))).to(self.device)
+        self.std = torch.from_numpy(np.load('./data/{}/std.npy'.format(config.area))).to(self.device)
         self.is_sea = self.is_sea.bool()
 
         learnable_position_embedding = self.get_position_embeding()[:,self.is_sea]

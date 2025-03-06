@@ -20,7 +20,7 @@ class ImputeFormer(nn.Module):
     ):
         super().__init__()
 
-        adj = np.load("/home/mafzhang/data/{}/8d/adj.npy".format(config.area))
+        adj = np.load("./data/{}/adj.npy".format(config.area))
         self.config = config
         self.device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
         self.n_nodes = adj.shape[0]
