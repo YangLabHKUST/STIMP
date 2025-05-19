@@ -17,11 +17,11 @@ from model.graphdiffusion import IAP_base
 parser = argparse.ArgumentParser(description='Imputation')
 
 # args for area and methods
-parser.add_argument('--area', type=str, default='MEXICO', help='which bay area we focus')
+parser.add_argument('--area', type=str, default='PRE', help='which bay area we focus')
 
 # basic args
 parser.add_argument('--epochs', type=int, default=500, help='epochs')
-parser.add_argument('--batch_size', type=int, default=16, help='batch size')
+parser.add_argument('--batch_size', type=int, default=1, help='batch size')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--wd', type=float, default=1e-4, help='weight decay')
 parser.add_argument('--test_freq', type=int, default=500, help='test per n epochs')
@@ -58,7 +58,7 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/STIMP/".format(config.area)
+base_dir = "./tmp/imputation/{}/{}/STIMP/".format(config.in_len, config.area)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)

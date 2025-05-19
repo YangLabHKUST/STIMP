@@ -85,6 +85,11 @@ class ImputeFormer(nn.Module):
         cond_mask = (rand_for_mask > 0).reshape(observed_mask.shape).float()
         return cond_mask
 
+    def forward(self, observed_data):
+        observed_mask = torch.ones_like(observed_data, device=self.device)
+        return self.trainstep(observed_data, observed_mask)
+
+
     def trainstep(self, inputs, ob_masks)->float:
         cond_mask = self.get_randmask(ob_masks, self.config.missing_ratio)
         cond_mask = cond_mask.to(self.device)

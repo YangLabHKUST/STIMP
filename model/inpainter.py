@@ -42,6 +42,12 @@ class IAP_base(nn.Module):
         cond_mask = (rand_for_mask > 0).reshape(observed_mask.shape).float()
         return cond_mask
 
+    def forward(self, observed_data):
+        observed_mask = torch.ones_like(observed_data, device=self.device)
+        adj = torch.ones((observed_mask.shape[-1], observed_mask.shape[-1]), device=self.device)
+        is_train=1
+        return self.trainstep(observed_data, observed_mask, adj, is_train)
+
     def trainstep(self, observed_data, observed_mask, adj, is_train, set_t=-1):
 
         cond_mask = self.get_randmask(observed_mask, self.config.missing_ratio)
@@ -123,6 +129,7 @@ class SpatialTemporalEncoding(nn.Module):
         self.spatial_encoding = GCN(self.config.in_len, self.config.in_len)
         self.diffusion_embedding = DiffusionEmbedding(num_steps=config.num_steps, embedding_dim=config.diffusion_embedding_size, projection_dim=config.in_len)
 
+        self.time_encoding = LinearAttentionTransformer(dim=4443, depth=1, heads=1, max_seq_len=16, n_local_attn_heads=0, local_attn_window_size=0)
         self.is_sea = torch.from_numpy(np.load('./data/{}/is_sea.npy'.format(config.area))).to(self.device)
         self.mean = torch.from_numpy(np.load('./data/{}/mean.npy'.format(config.area))).to(self.device)
         self.std = torch.from_numpy(np.load('./data/{}/std.npy'.format(config.area))).to(self.device)
@@ -147,8 +154,10 @@ class SpatialTemporalEncoding(nn.Module):
         #temporal encoding
         x = self.spatial_encoding(x,adj)
         #spatial encoding
+        x = rearrange(x, 'b n (t c)->(b c) t n', t=T)
+        x = self.time_encoding(x)
 
-        y = rearrange(x, 'b n (t c) -> b t c n', t=T, c=C)
+        y = rearrange(x, '(b c) t n -> b t c n', b=B, c=C)
         low_bound = self.low_bound.unsqueeze(0).unsqueeze(0).expand_as(y)
         high_bound = self.high_bound.unsqueeze(0).unsqueeze(0).expand_as(y)
         y = torch.clamp(y, low_bound, high_bound)

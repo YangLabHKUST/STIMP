@@ -24,13 +24,13 @@ from utils import AverageMeter
 parser = argparse.ArgumentParser(description='Prediction')
 
 # args for area and methods
-parser.add_argument('--area', type=str, default='MEXICO', help='which bay area we focus')
+parser.add_argument('--area', type=str, default='PRE', help='which bay area we focus')
 parser.add_argument('--method', type=str, default='GraphTransformer', help='which bay area we focus')
 parser.add_argument('--index', type=int, default=0, help='which dataset we use')
 
 # basic args
 parser.add_argument('--epochs', type=int, default=200, help='epochs')
-parser.add_argument('--batch_size', type=int, default=8, help='batch size')
+parser.add_argument('--batch_size', type=int, default=1, help='batch size')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
 parser.add_argument('--wd', type=float, default=1e-6, help='weight decay')
 parser.add_argument('--test_freq', type=int, default=20, help='test per n epochs')
@@ -55,7 +55,7 @@ else:
     print("Not Implement")
 
 flag = "with_imputation"
-base_dir = "./log/prediction/{}/{}/{}/".format(config.area, config.method, flag)
+base_dir = "./tmp/prediction/{}/{}/{}/".format(config.area, config.method, flag)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)

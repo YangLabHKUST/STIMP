@@ -12,15 +12,17 @@ from timm.utils import AverageMeter
 from timm.scheduler.cosine_lr import CosineLRScheduler
 import numpy as np
 import sys
+from calflops import calculate_flops
 
 sys.path.insert(0, os.getcwd())
 from dataset.dataset_imputation import PRE8dDataset
-from utils import check_dir, masked_mae, masked_mse, seed_everything
+from utils import check_dir, masked_mae, masked_mse, masked_cor
+
 
 parser = argparse.ArgumentParser(description='Imputation')
 
 # args for area and methods
-parser.add_argument('--area', type=str, default='MEXICO', help='which bay area we focus')
+parser.add_argument('--area', type=str, default='PRE', help='which bay area we focus')
 
 # basic args
 parser.add_argument('--epochs', type=int, default=500, help='epochs')
@@ -45,6 +47,7 @@ parser.add_argument('--num_steps', type=float, default=50, help='denoising steps
 parser.add_argument('--num_samples', type=int, default=10, help='n datasets')
 parser.add_argument('--schedule', type=str, default='quad', help='noise schedule type')
 parser.add_argument('--target_strategy', type=str, default='random', help='mask')
+parser.add_argument('--method', type=str, default='CSDI', help='which method we use')
 
 # args for mae
 parser.add_argument('--num_heads', type=int, default=8, help='n heads for self attention')
@@ -61,43 +64,52 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/{}/Slide_Window/".format(config.in_len, config.area)
+base_dir = "./log/imputation/{}/{}/".format(config.area, config.method)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
-seed_everything(1234)
 timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-logging.basicConfig(level=logging.INFO, filename=os.path.join(base_dir, '{}_missing_{}.log'.format(timestamp, config.missing_ratio)), filemode='a', format='%(asctime)s - %(message)s')
-print(config)
+logging.basicConfig(level=logging.INFO, filename=os.path.join(base_dir, 'memory.log'), filemode='a', format='%(asctime)s - %(message)s')
 logging.info(config)
 
 train_dataset = PRE8dDataset(config)
-train_dloader = DataLoader(train_dataset, config.batch_size, shuffle=True, prefetch_factor=2, num_workers=2)
-test_dloader = DataLoader(PRE8dDataset(config, mode='test'), config.batch_size, shuffle=False)
+train_dloader = DataLoader(train_dataset, 1, shuffle=True, prefetch_factor=2, num_workers=2)
 adj = np.load("data/{}/adj.npy".format(config.area))
 adj = torch.from_numpy(adj).float().to(device)
 low_bound = torch.from_numpy(train_dataset.min).float().to(device)
 high_bound = torch.from_numpy(train_dataset.max).float().to(device)
 
-chla_mae_list, chla_mse_list= [], []
-for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(test_dloader):
-    datas , data_ob_masks, data_gt_masks, labels, label_masks = datas.to(device), data_ob_masks.to(device), data_gt_masks.to(device), labels.to(device), label_masks.to(device)
+if config.method=="CSDI":
+    from model.csdi import IAP_base
+    model = IAP_base(config, low_bound, high_bound)
+    model = model.to(device)
+    flops, macs, params = calculate_flops(model, input_shape=(1, config.in_len, 1, 4443))
 
-    mean_datas = torch.sum(data_gt_masks * datas, dim=1, keepdim=True)/(torch.sum(data_gt_masks, dim=1, keepdim=True)+1e-10)
-    mean_datas = mean_datas.expand_as(datas)
-    imputed_data = torch.where(data_gt_masks.bool(), datas, mean_datas)
-    imputed_data = imputed_data.cpu()
+elif config.method=="ImputeFormer":
+    from model.imputeformer import ImputeFormer
+    model = ImputeFormer(config)
+    model = model.to(device)
+    flops, macs, params = calculate_flops(model, input_shape=(1, config.in_len, 1, 4443))
 
-    mask = (data_ob_masks - data_gt_masks).cpu()
-    chla_mae= masked_mae(imputed_data[:,:,0], datas[:,:,0].cpu(), mask[:,:,0])
-    chla_mse= masked_mse(imputed_data[:,:,0], datas[:,:,0].cpu(), mask[:,:,0])
-    chla_mae_list.append(chla_mae)
-    chla_mse_list.append(chla_mse)
+elif config.method=="Inpainter":
+    from model.inpainter import IAP_base
+    model = IAP_base(config, low_bound, high_bound)
+    model = model.to(device)
+    flops, macs, params = calculate_flops(model, input_shape=(1, config.in_len, 1, 4443))
 
-chla_mae = torch.stack(chla_mae_list, 0)
-chla_mse = torch.stack(chla_mse_list, 0)
+elif config.method=="STIMP":
+    from model.graphdiffusion import IAP_base
+    model = IAP_base(config, low_bound, high_bound)
+    model = model.to(device)
+    flops, macs, params = calculate_flops(model, input_shape=(3, config.in_len, 1, 4443))
+
+elif config.method=="MAE":
+    from model.mae import MaskedAutoEncoder
+    model = MaskedAutoEncoder(config)
+    model = model.to(device)
+    flops, macs, params = calculate_flops(model, input_shape=(1, config.in_len, 1, 60, 96))
+
+print("{}".format(config.method))
+print("FLOPs:%s   MACs:%s   Params:%s \n" %(flops, macs, params))
 
 
-log_buffer = "test mae: chla-{:.4f}, ".format(chla_mae[chla_mae!=0].mean())
-log_buffer += "test mse: chla-{:.4f}".format(chla_mse[chla_mse!=0].mean())
-print(log_buffer)
-logging.info(log_buffer)
+

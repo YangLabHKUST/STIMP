@@ -64,7 +64,7 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/Lin-Itp/".format(config.area)
+base_dir = "./log/imputation/{}/{}/Lin-Itp/".format(config.in_len, config.area)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)

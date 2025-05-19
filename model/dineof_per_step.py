@@ -10,11 +10,10 @@ from sklearn.base import BaseEstimator
 file_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(file_dir)
 
-
 class DINEOF(BaseEstimator):
     def __init__(self, R, tensor_shape, mask=None,
                  nitemax=300, toliter=1e-5, tol=1e-8, to_center=True, 
-                 keep_non_negative_only=True,
+                 keep_non_negative_only=False,
                  with_energy=False,
                  early_stopping=True):
         self.K = R  # HACK: Make interface consistent with DINEOF3, but want to keep intrinsics as is
@@ -53,7 +52,7 @@ class DINEOF(BaseEstimator):
         
     def fit(self, y):
         tensor = y
-        self._fit(rectify_tensor(tensor))
+        self._fit(tensor)
         
     def _fit(self, mat):
         if mat.ndim > 2:
@@ -148,8 +147,8 @@ def rectify_tensor(tensor):
 def tensorify(X, y, shape):
     tensor = np.full(shape, np.nan)
     for i, d in enumerate(X):
-        lat, lon, t = d.astype(np.int32)
-        tensor[lat, lon, t] = y[i]
+        lat, lon = d.astype(np.int32)
+        tensor[lat, lon] = y[i]
 
     return tensor
 

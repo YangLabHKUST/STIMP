@@ -68,7 +68,7 @@ elif config.area=="Yangtze":
 else:
     print("Not Implement")
 
-base_dir = "./log/imputation/{}/DINEOF/".format(config.area)
+base_dir = "./log/imputation/{}/{}/DINEOF/".format(config.in_len, config.area)
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 check_dir(base_dir)
 seed_everything(1234)
@@ -88,7 +88,7 @@ high_bound = torch.from_numpy(train_dataset.max).float().to(device)
 best_mae_sst = 100
 best_mae_chla = 100
 
-model = DINEOF(10, [config.height, config.width, config.in_len])
+model = DINEOF(10, [config.height, config.width, config.in_len], keep_non_negative_only=False)
 
 test_dloader_pbar = tqdm(test_dloader)
 # for train_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enumerate(train_dloader_pbar):
@@ -116,7 +116,7 @@ for test_step, (datas, data_ob_masks, data_gt_masks, labels, label_masks) in enu
     model.fit(x, tmp_data)
 
     imputed_data = model.predict(x)
-    imputed_data = rearrange(imputed_data, "(b t c h w)->b t c h w", b=1, t=datas.shape[1], c=1, h=datas.shape[-2], w=datas.shape[-1])
+    imputed_data = rearrange(imputed_data, "(b h w c t)->b t c h w", b=1, t=datas.shape[1], c=1, h=datas.shape[-2], w=datas.shape[-1])
 
     mask = (data_ob_masks - data_gt_masks).cpu()
     chla_mae= masked_mae(imputed_data[:,:,0], datas[:,:,0].cpu(), mask[:,:,0])

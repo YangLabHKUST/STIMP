@@ -45,6 +45,12 @@ class IAP_base(nn.Module):
         cond_mask = (rand_for_mask > 0).reshape(observed_mask.shape).float()
         return cond_mask
 
+    def forward(self, observed_data):
+        observed_mask = torch.ones_like(observed_data, device=self.device)
+        adj = torch.ones((observed_mask.shape[-1], observed_mask.shape[-1]), device=self.device)
+        is_train=1
+        return self.trainstep(observed_data, observed_mask, adj, is_train)
+
     def trainstep(self, observed_data, observed_mask, adj, is_train, set_t=-1):
 
         cond_mask = self.get_randmask(observed_mask, self.config.missing_ratio)

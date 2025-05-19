@@ -77,6 +77,13 @@ class MaskedAutoEncoder(nn.Module):
         predicted = self.patch2img(patches)
         return predicted
 
+    def forward(self, observed_data):
+        observed_mask = torch.ones_like(observed_data, device=self.device)
+        adj = torch.ones((observed_mask.shape[-1], observed_mask.shape[-1]), device=self.device)
+        is_train=1
+        return self.trainstep(observed_data, observed_mask, observed_data, observed_mask, is_train)
+
+
     def trainstep(self, observed_data, observed_mask, observed_y, observed_y_mask, is_train, set_t=-1):
 
         cond_mask = self.get_randmask(observed_mask)
