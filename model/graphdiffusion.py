@@ -10,6 +10,13 @@ from torch.nn import Parameter
 
 class IAP_base(nn.Module):
     def __init__(self, config, low_bound, high_bound) -> None:
+        """STIMP imputation function
+
+        Args:
+            config (_type_): config dict
+            low_bound (_type_): low bound of Chl_a for each location
+            high_bound (_type_): high bound of Chl_a for each location
+        """
         super().__init__()
         self.device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
         self.config = config
@@ -32,6 +39,15 @@ class IAP_base(nn.Module):
         self.high_bound = high_bound
 
     def get_randmask(self, observed_mask, sample_ratio):
+        """randomly mask some observations for training
+
+        Args:
+            observed_mask (_type_): Indicates whether the location has an observation.
+            sample_ratio (_type_): random s%
+
+        Returns:
+            _type_: the final observation used for training
+        """
         rand_for_mask = torch.rand_like(observed_mask) * observed_mask
         rand_for_mask = rand_for_mask.reshape(len(rand_for_mask), -1)
         for i in range(len(observed_mask)):
@@ -50,6 +66,18 @@ class IAP_base(nn.Module):
         return self.trainstep(observed_data, observed_mask, adj, is_train)
 
     def trainstep(self, observed_data, observed_mask, adj, is_train, set_t=-1):
+        """training process
+
+        Args:
+            observed_data (_type_): observation data
+            observed_mask (_type_): mask
+            adj (_type_): adjacency matrix
+            is_train (bool): _description_
+            set_t (int, optional): add t steps noise for training. Defaults to -1.
+
+        Returns:
+            _type_: loss
+        """
 
         cond_mask = self.get_randmask(observed_mask, self.config.missing_ratio)
         cond_mask = cond_mask.to(self.device)
@@ -79,6 +107,17 @@ class IAP_base(nn.Module):
         return loss
 
     def impute(self, observed_data, observed_mask, adj, n_samples):
+        """impute process
+
+        Args:
+            observed_data (_type_): observation data
+            observed_mask (_type_): mask
+            adj (_type_): adjacency matrix
+            n_samples (_type_): generate n samples based on the partial observation
+
+        Returns:
+            _type_: n samples of imputed Chl_a
+        """
         B, T, K, N = observed_data.shape
         imputed_samples = torch.zeros(B, n_samples, T, K, N)
         mean = (observed_data*observed_mask).sum(1, keepdim=True)/(observed_mask.sum(1, keepdim=True)+1e-5)
@@ -112,6 +151,17 @@ class IAP_base(nn.Module):
         return imputed_samples
     
     def impute_with_process(self, observed_data, observed_mask, adj, n_samples):
+        """impute process 
+
+        Args:
+            observed_data (_type_): observation data
+            observed_mask (_type_): mask
+            adj (_type_): adjacency matrix
+            n_samples (_type_): generate n samples based on the partial observation
+
+        Returns:
+            _type_: n samples of imputed Chl_a with t denoising steps
+        """
         B, T, K, N = observed_data.shape
         imputed_samples = torch.zeros(B, self.num_steps, n_samples, T, K, N)
         mean = (observed_data*observed_mask).sum(1, keepdim=True)/(observed_mask.sum(1, keepdim=True)+1e-5)
@@ -222,6 +272,11 @@ class SpatialTemporalEncoding(nn.Module):
         return y
 
     def get_position_embeding(self):
+        """position embedding
+
+        Returns:
+            _type_: _description_
+        """
         height = self.config.height
         width = self.config.width
         pos_w = torch.arange(0., width)/width
@@ -241,6 +296,13 @@ class SpatialTemporalEncoding(nn.Module):
 
 class DiffusionEmbedding(nn.Module):
     def __init__(self, num_steps, embedding_dim=128, projection_dim=None):
+        """Diffusion embedding
+
+        Args:
+            num_steps (_type_): total denosing steps
+            embedding_dim (int, optional): _description_. Defaults to 128.
+            projection_dim (_type_, optional): _description_. Defaults to None.
+        """
         super().__init__()
         if projection_dim is None:
             projection_dim = embedding_dim
@@ -275,6 +337,13 @@ class GCN(nn.Module):
                  num_types,
                  temp=1, # temperature parameter
                  ):
+        """Heterogeneous Graph Neural Network
+
+        Args:
+            c_in (_type_): dimensionality of input features
+            num_types (_type_): _description_
+            temp (int, optional): _description_. Defaults to 1.
+        """
 
         super().__init__()
 
@@ -294,8 +363,11 @@ class GCN(nn.Module):
 
         # Apply linear layer and sort nodes by head
         node_feats = torch.matmul(adj_matrix, node_feats)
+        # Generate the location specific weight
         position_embedding = torch.matmul(adj_matrix, position_embedding.transpose(0,1))
         position_weights = torch.einsum('nd, dio-> nio', position_embedding, self.weights_pool)
+
+        # forward the GCN
         node_feats = torch.einsum('bni, nio->bno', node_feats, position_weights)
         return node_feats
 

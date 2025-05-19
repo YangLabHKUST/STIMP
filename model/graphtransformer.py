@@ -13,6 +13,12 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 class TokenEmbedding(nn.Module): 
     def __init__(self, c_in, d_model):
+        """_summary_
+
+        Args:
+            c_in (_type_): _description_
+            d_model (_type_): _description_
+        """
         super(TokenEmbedding, self).__init__()
         padding = 1 if torch.__version__ >= '1.5.0' else 2
         self.tokenConv = nn.Conv1d(in_channels=c_in, out_channels=d_model,
@@ -27,6 +33,14 @@ class TokenEmbedding(nn.Module):
 
 class PositionEmbedding(nn.Module):
     def __init__(self, config, is_sea, mean, std):
+        """Position to embedding
+
+        Args:
+            config (_type_): config dict
+            is_sea (bool): a matrix to indicate if the locations are the sea, i.e. M_{ij}=1 mean the location (i, j) is the sea
+            mean (_type_): the mean of Chl_a for each location
+            std (_type_): the variation of Chl_a for each location
+        """
         super(PositionEmbedding, self).__init__()
         self.config = config
         self.d_model = config.hidden_dim
@@ -94,6 +108,14 @@ class GCN(nn.Module):
 
 class GraphTransformer(nn.Module):
     def __init__(self, config, adj, is_sea, mean, std):
+        """STIMP prediction function
+        Args:
+            config (_type_): config dict
+            adj (_type_): adj matrix
+            is_sea (bool): a matrix to indicate if the locations are the sea, i.e. M_{ij}=1 mean the location (i, j) is the sea
+            mean (_type_): the mean of Chl_a for each location
+            std (_type_): the variation of Chl_a for each location
+        """
         super(type(self), self).__init__()
         self.config = config 
         self.c_in = 1
@@ -108,7 +130,10 @@ class GraphTransformer(nn.Module):
         self.value_embedding = TokenEmbedding(c_in=self.c_in, d_model=self.c_hid)
         self.position_embedding = PositionEmbedding(config, is_sea=is_sea, mean=mean, std=std)
 
+        # Heterogeneous Graph Neural Network
         self.spatial_encoder = GCN(self.c_hid, self.c_hid, self.c_hid, 3)
+
+        # Temporal Linear Transformer
         self.temporal_encoder = LinearAttentionTransformer(dim=self.c_hid, depth=1, heads=1, max_seq_len=100, n_local_attn_heads=0, local_attn_window_size=0)
 
         self.projection1 = nn.Linear(self.in_len, self.out_len)

@@ -12,6 +12,11 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 class TokenEmbedding(nn.Module): 
     def __init__(self, c_in, d_model):
+        """Chl_a value to embedding
+        Args:
+            c_in (_type_): input dimension
+            d_model (_type_): hidden dimension
+        """
         super(TokenEmbedding, self).__init__()
         padding = 1 if torch.__version__ >= '1.5.0' else 2
         self.tokenConv = nn.Conv1d(in_channels=c_in, out_channels=d_model,
@@ -26,6 +31,14 @@ class TokenEmbedding(nn.Module):
 
 class PositionEmbedding(nn.Module):
     def __init__(self, config, is_sea, mean, std):
+        """Position to embedding
+
+        Args:
+            config (_type_): config dict
+            is_sea (bool): a matrix to indicate if the locations are the sea, i.e. M_{ij}=1 mean the location (i, j) is the sea
+            mean (_type_): the mean of Chl_a for each location
+            std (_type_): the variation of Chl_a for each location
+        """
         super(PositionEmbedding, self).__init__()
         self.config = config
         self.d_model = config.hidden_dim
@@ -60,6 +73,15 @@ class PositionEmbedding(nn.Module):
 
 class Transformer(nn.Module):
     def __init__(self, config, adj, is_sea, mean, std):
+        """Transformer
+
+        Args:
+            config (_type_): config dict
+            adj (_type_): adj matrix
+            is_sea (bool): a matrix to indicate if the locations are the sea, i.e. M_{ij}=1 mean the location (i, j) is the sea
+            mean (_type_): the mean of Chl_a for each location
+            std (_type_): the variation of Chl_a for each location
+        """
         super(type(self), self).__init__()
         self.config = config 
         self.c_in = 1
